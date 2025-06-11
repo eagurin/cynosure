@@ -1,0 +1,105 @@
+{
+  "mcpServers": {
+    "agent_guidelines": {
+      "type": "stdio",
+      "command": "docs/agent_guidelines",
+      "scope": "project",
+      "description": "Agent guidelines and best practices for Cynosure AI development"
+    }
+  },
+  "commands": {
+    "start": {
+      "file": ".claude/commands/start_task.md",
+      "description": "Start a new development task with proper setup"
+    },
+    "review": {
+      "file": ".claude/commands/review_guidelines.md", 
+      "description": "Quick reference for agent guidelines and architecture"
+    },
+    "complete": {
+      "file": ".claude/commands/complete_task.md",
+      "description": "Complete task with proper testing and documentation"
+    },
+    "think": {
+      "file": ".claude/commands/think.md",
+      "description": "Activate extended thinking mode for complex problems"
+    },
+    "debug": {
+      "file": ".claude/commands/debug.md",
+      "description": "Debug MCP configuration and tool issues"
+    },
+    "memory_search": {
+      "file": ".claude/commands/memory_search.md",
+      "description": "Search user memory for context and patterns"
+    },
+    "memory_add": {
+      "file": ".claude/commands/memory_add.md",
+      "description": "Add information to memory system"
+    },
+    "knowledge_search": {
+      "file": ".claude/commands/knowledge_search.md",
+      "description": "Search project knowledge base"
+    },
+    "agent_memory": {
+      "file": ".claude/commands/agent_memory.md",
+      "description": "Interact with specialized Memory Agent"
+    },
+    "agent_research": {
+      "file": ".claude/commands/agent_research.md",
+      "description": "Interact with specialized Research Agent"
+    },
+    "web_search": {
+      "file": ".claude/commands/web_search.md",
+      "description": "Search web for current information"
+    },
+    "docker_ops": {
+      "file": ".claude/commands/docker_ops.md",
+      "description": "Docker Compose operations and management"
+    },
+    "filesystem_ops": {
+      "file": ".claude/commands/filesystem_ops.md",
+      "description": "Advanced filesystem operations and bulk file processing"
+    },
+    "context7": {
+      "file": ".claude/commands/context7.md",
+      "description": "Library documentation and code examples with trust scoring"
+    },
+    "github_ops": {
+      "file": ".claude/commands/github_ops.md",
+      "description": "GitHub repository and collaboration management"
+    },
+    "git_ops": {
+      "file": ".claude/commands/git_ops.md",
+      "description": "Advanced Git operations and workflow automation"
+    },
+    "puppeteer": {
+      "file": ".claude/commands/puppeteer.md",
+      "description": "Browser automation and web interface testing"
+    },
+    "supabase": {
+      "file": ".claude/commands/supabase.md",
+      "description": "Supabase database and backend operations"
+    },
+    "python_repl": {
+      "file": ".claude/commands/python_repl.md",
+      "description": "Interactive Python execution and testing"
+    },
+    "arxiv": {
+      "file": ".claude/commands/arxiv.md",
+      "description": "Academic paper search and research"
+    },
+    "tavily": {
+      "file": ".claude/commands/tavily.md",
+      "description": "Advanced web search and content analysis"
+    },
+    "desktop": {
+      "file": ".claude/commands/desktop.md",
+      "description": "Desktop automation and system control"
+    }
+  },
+  "settings": {
+    "debugMode": true,
+    "permissionLevel": "restricted",
+    "autoSave": true
+  }
+}
