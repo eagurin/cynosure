@@ -181,7 +181,7 @@ async function handleNonStreamingRequest(
   }
 
   // Translate back to OpenAI format
-  return translateClaudeResponseToOpenAI(claudeResponse, originalModel, false);
+  return translateClaudeResponseToOpenAI(claudeResponse, originalModel);
 }
 
 async function handleStreamingRequest(
