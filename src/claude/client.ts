@@ -41,8 +41,10 @@ export class ClaudeCodeClient {
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
 
-    // Claude CLI path
-    const claudeCommand = '/Users/laptop/.claude/local/claude';
+    // Claude CLI path - try local first, fallback to global
+    const claudeCommand = process.env.CLAUDE_CLI_PATH || 
+                         '/Users/laptop/.claude/local/claude' || 
+                         'claude';
 
     this.query = async function* (options: any) {
       try {

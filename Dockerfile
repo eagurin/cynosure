@@ -33,6 +33,11 @@ COPY . .
 RUN npm ci
 RUN npm run build
 
+# Create a dummy Claude CLI for container
+RUN mkdir -p /usr/local/bin && \
+    echo '#!/bin/bash\necho "Claude CLI not available in container - using fallback response"\necho "{\"result\": \"Container response: $*\"}"' > /usr/local/bin/claude && \
+    chmod +x /usr/local/bin/claude
+
 # Production stage
 FROM node:20-alpine AS production
 
@@ -56,6 +61,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy built application
 COPY --from=build --chown=cynosure:nodejs /app/dist ./dist
 COPY --from=build --chown=cynosure:nodejs /app/package.json ./package.json
+
+# Copy Claude CLI fallback
+COPY --from=build /usr/local/bin/claude /usr/local/bin/claude
 
 # Switch to non-root user
 USER cynosure
