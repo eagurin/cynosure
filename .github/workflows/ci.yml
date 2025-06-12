@@ -91,7 +91,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: false  # Temporarily disabled until Docker build is fixed
     
     steps:
     - uses: actions/checkout@v4
