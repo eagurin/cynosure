@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "mcp-server-filesystem",
+      "args": ["--root", "."]
+    },
+    "github": {
+      "command": "mcp-server-github",
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
