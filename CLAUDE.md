@@ -18,12 +18,27 @@ npm run build            # Compile TypeScript
 npm start                # Run production server
 
 # Testing
-npm test                 # Run all tests with Vitest
-npm run test:watch       # Watch mode for tests
+npm run test             # Run all tests with Vitest
+npm run test:unit        # Unit tests only
+npm run test:integration # Integration tests only
+npm run test:e2e         # End-to-end tests only
+npm run test:coverage    # With coverage report
+
+# Code Quality
+npm run lint             # ESLint check
+npm run lint:fix         # ESLint auto-fix
+npm run format           # Prettier formatting
+npm run format:check     # Check formatting
+npm run typecheck        # TypeScript type checking
+npm run precommit        # Run all checks before commit
 
 # Docker
 npm run docker:build     # Build Docker image
 npm run docker:run       # Run in container
+
+# Utilities
+npm run clean            # Clean dist and coverage
+npm run ci               # Full CI pipeline locally
 ```
 
 ## Architecture
@@ -105,6 +120,22 @@ curl http://localhost:3000/health
 curl http://localhost:3000/v1/models
 ```
 
+## Git Workflow
+
+### Branches
+- `master` - Production-ready code
+- `dev` - Development integration branch
+- `feat/feature-name` - Feature branches
+- `fix/bug-name` - Bug fix branches
+
+### Development Process
+1. Create feature branch from `dev`
+2. Implement changes with tests
+3. Run `npm run precommit` before commit
+4. Create PR to `dev` branch
+5. After review, merge to `dev`
+6. Periodic releases merge `dev` to `master`
+
 ## Project Structure
 
 - `src/claude/` - Claude CLI integration and execution logic
@@ -112,6 +143,29 @@ curl http://localhost:3000/v1/models
 - `src/translation/` - OpenAI ↔ Claude format conversion
 - `src/models/` - TypeScript interfaces and schemas
 - `src/utils/` - Helper functions (ID generation, token counting)
+- `tests/` - Test suites (unit, integration, e2e)
+- `docs/` - Project documentation
+- `.github/` - GitHub workflows and templates
+
+## Code Quality
+
+### ESLint Configuration
+- TypeScript-specific rules
+- Consistent code style
+- Error prevention
+- Auto-fixable issues
+
+### Prettier Configuration
+- Consistent formatting
+- 2-space indentation
+- Single quotes
+- Trailing commas
+
+### Testing Strategy
+- Unit tests for individual functions
+- Integration tests for API routes
+- E2E tests for full request flow
+- Coverage reporting with Vitest
 
 ## Important Notes
 
@@ -119,3 +173,4 @@ curl http://localhost:3000/v1/models
 - All OpenAI model names are automatically mapped to appropriate Claude models
 - Streaming responses use chunked transfer encoding with SSE format
 - The system preserves OpenAI's response structure including system_fingerprint and usage metrics
+- CI/CD pipeline enforces code quality and testing before deployment
