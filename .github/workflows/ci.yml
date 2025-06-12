@@ -89,7 +89,7 @@ jobs:
         fail_ci_if_error: false
 
   # Docker build temporarily disabled - application works perfectly without containerization
-  # Uncomment when Docker support is needed
+  # Re-enable when needed by uncommenting the docker job below
   # docker:
   #   runs-on: ubuntu-latest
   #   needs: test
