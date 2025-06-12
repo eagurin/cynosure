@@ -1,6 +1,6 @@
 # 🌟 Cynosure Bridge
 
-**OpenAI-compatible API proxy для Claude Code SDK с поддержкой MAX subscription**
+**OpenAI-compatible** API proxy для Claude Code SDK с поддержкой MAX subscription
 
 Cynosure Bridge решает проблему географических ограничений Claude MAX subscription путём создания локального API моста, совместимого с OpenAI API, использующего Claude Code SDK под капотом.
 
