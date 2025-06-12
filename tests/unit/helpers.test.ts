@@ -6,7 +6,7 @@ describe('helpers', () => {
     it('should generate unique IDs with prefix', () => {
       const id1 = generateId('test');
       const id2 = generateId('test');
-      
+
       expect(id1).toMatch(/^test-[a-zA-Z0-9]+$/);
       expect(id2).toMatch(/^test-[a-zA-Z0-9]+$/);
       expect(id1).not.toBe(id2);

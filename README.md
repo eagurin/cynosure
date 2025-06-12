@@ -14,7 +14,7 @@ Cynosure Bridge solves the geographical limitations of Claude MAX subscription b
 ### Core Functionality (✅ Available)
 
 - **Full OpenAI API Compatibility** - Use existing applications without modifications
-- **Claude MAX Subscription Support** - Bypass regional limitations through Claude Code SDK  
+- **Claude MAX Subscription Support** - Bypass regional limitations through Claude Code SDK
 - **Streaming Responses** - Real-time streaming response support
 - **Automatic Model Mapping** - Seamless OpenAI ↔ Claude model translation
 - **Docker Ready** - Containerized deployment support
@@ -40,7 +40,7 @@ graph LR
     D -->|Response| C
     C -->|Output| B
     B -->|Translate| A
-    
+
     B --> E[Request Validation]
     B --> F[Model Mapping]
     B --> G[Response Translation]
@@ -59,7 +59,7 @@ graph LR
 ## 📊 Project Status
 
 - **🟢 Stable**: Core API functionality, Docker support
-- **🟡 Beta**: CI/CD pipeline, documentation  
+- **🟡 Beta**: CI/CD pipeline, documentation
 - **🔴 Alpha**: Advanced features (MCP, caching, auth)
 
 **Current Version**: `v1.0.0` ([Changelog](https://github.com/eagurin/cynosure/releases))
@@ -103,7 +103,7 @@ PORT=3000
 # Development режим
 npm run dev
 
-# Production режим  
+# Production режим
 npm run build
 npm start
 
@@ -120,12 +120,12 @@ docker-compose up
 ```javascript
 // Вместо
 const openai = new OpenAI({
-  baseURL: "https://api.openai.com/v1"
+  baseURL: 'https://api.openai.com/v1',
 });
 
 // Используйте
 const openai = new OpenAI({
-  baseURL: "http://localhost:3000/v1"
+  baseURL: 'http://localhost:3000/v1',
 });
 ```
 
@@ -161,13 +161,13 @@ curl -X POST http://localhost:3000/v1/chat/completions \\
 
 ## 🗺️ Маппинг моделей
 
-| OpenAI Model | Claude Model | Описание |
-|--------------|--------------|----------|
-| `gpt-4` | `claude-3-opus-20240229` | Максимальная производительность |
-| `gpt-4-turbo` | `claude-3-sonnet-20240229` | Баланс скорости и качества |
-| `gpt-3.5-turbo` | `claude-3-haiku-20240307` | Быстрые ответы |
-| `gpt-4o` | `claude-3-5-sonnet-20241022` | Последняя версия |
-| `gpt-4o-mini` | `claude-3-5-haiku-20241022` | Оптимизированная версия |
+| OpenAI Model    | Claude Model                 | Описание                        |
+| --------------- | ---------------------------- | ------------------------------- |
+| `gpt-4`         | `claude-3-opus-20240229`     | Максимальная производительность |
+| `gpt-4-turbo`   | `claude-3-sonnet-20240229`   | Баланс скорости и качества      |
+| `gpt-3.5-turbo` | `claude-3-haiku-20240307`    | Быстрые ответы                  |
+| `gpt-4o`        | `claude-3-5-sonnet-20241022` | Последняя версия                |
+| `gpt-4o-mini`   | `claude-3-5-haiku-20241022`  | Оптимизированная версия         |
 
 ## 🏗️ Архитектура
 
@@ -201,7 +201,7 @@ curl -X POST http://localhost:3000/v1/chat/completions \\
 GET /health
 ```
 
-### Models List  
+### Models List
 
 ```bash
 GET /v1/models
@@ -223,16 +223,16 @@ GET /docs (development only)
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `ANTHROPIC_API_KEY` | Claude API Key | - | ✅ |
-| `PORT` | Server port | `3000` | ❌ |
-| `HOST` | Server host | `0.0.0.0` | ❌ |
-| `NODE_ENV` | Environment | `development` | ❌ |
-| `LOG_LEVEL` | Log level | `info` | ❌ |
-| `WORKING_DIRECTORY` | Project directory | `process.cwd()` | ❌ |
-| `MAX_TURNS` | Max conversation turns | `5` | ❌ |
-| `TIMEOUT` | Request timeout (ms) | `300000` | ❌ |
+| Variable            | Description            | Default         | Required |
+| ------------------- | ---------------------- | --------------- | -------- |
+| `ANTHROPIC_API_KEY` | Claude API Key         | -               | ✅       |
+| `PORT`              | Server port            | `3000`          | ❌       |
+| `HOST`              | Server host            | `0.0.0.0`       | ❌       |
+| `NODE_ENV`          | Environment            | `development`   | ❌       |
+| `LOG_LEVEL`         | Log level              | `info`          | ❌       |
+| `WORKING_DIRECTORY` | Project directory      | `process.cwd()` | ❌       |
+| `MAX_TURNS`         | Max conversation turns | `5`             | ❌       |
+| `TIMEOUT`           | Request timeout (ms)   | `300000`        | ❌       |
 
 ### MCP Configuration
 
@@ -247,7 +247,7 @@ Cynosure поддерживает Model Context Protocol для расширен
       "env": {}
     },
     "git": {
-      "command": "npx", 
+      "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-git", "/path/to/repo"],
       "env": {}
     }
@@ -261,7 +261,7 @@ Cynosure поддерживает Model Context Protocol для расширен
 
 ```bash
 npm run dev          # Development with hot reload
-npm run build        # TypeScript compilation  
+npm run build        # TypeScript compilation
 npm run start        # Production server
 npm run test         # Run tests
 npm run test:e2e     # E2E tests
@@ -318,7 +318,7 @@ services:
   cynosure:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - ANTHROPIC_API_KEY=sk-ant-your-key
       - NODE_ENV=production
@@ -333,7 +333,7 @@ services:
 npm run test
 ```
 
-### Integration Tests  
+### Integration Tests
 
 ```bash
 npm run test:integration
@@ -375,7 +375,7 @@ docker logs -f cynosure
 ### Metrics
 
 - Request/response times
-- Error rates  
+- Error rates
 - Token usage
 - Claude Code SDK performance
 
@@ -423,7 +423,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### Documentation
 
 - [API Reference](docs/API.md)
-- [Setup Guide](docs/SETUP.md)  
+- [Setup Guide](docs/SETUP.md)
 - [Examples](docs/EXAMPLES.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 

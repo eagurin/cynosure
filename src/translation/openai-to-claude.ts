@@ -12,29 +12,29 @@ export function translateOpenAIRequestToClaudeCode(
   // Extract system prompt if present
   const systemMessage = request.messages.find(msg => msg.role === 'system');
   const userMessages = request.messages.filter(msg => msg.role !== 'system');
-  
+
   // Combine user messages into a single prompt
   const prompt = combineMessagesToPrompt(userMessages);
-  
+
   // Map model from OpenAI to Claude
   // const claudeModel = mapOpenAIModelToClaude(request.model); // Keeping for future model mapping
-  
+
   // Calculate maxTurns based on request parameters
   const maxTurns = calculateMaxTurns(request);
-  
+
   return {
     prompt,
     options: {
       maxTurns,
       systemPrompt: systemMessage?.content,
       workingDirectory: process.cwd(),
-    }
+    },
   };
 }
 
 function combineMessagesToPrompt(messages: OpenAIMessage[]): string {
   const parts: string[] = [];
-  
+
   for (const message of messages) {
     switch (message.role) {
       case 'user':
@@ -48,7 +48,7 @@ function combineMessagesToPrompt(messages: OpenAIMessage[]): string {
         break;
     }
   }
-  
+
   return parts.join('\n\n');
 }
 
@@ -56,11 +56,11 @@ function calculateMaxTurns(request: OpenAIChatCompletionRequest): number {
   // Base maxTurns on conversation length and complexity
   const baseMaxTurns = 5;
   const messageCount = request.messages.length;
-  
+
   // More messages = potentially more turns needed
   if (messageCount > 10) return 10;
   if (messageCount > 5) return 7;
-  
+
   return baseMaxTurns;
 }
 

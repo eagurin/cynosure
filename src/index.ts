@@ -19,30 +19,33 @@ async function createServer() {
     console.error('❌ Environment validation failed:', error);
     process.exit(1);
   }
-  
+
   // Create Fastify instance
   const fastify = Fastify({
     logger: {
       level: process.env.LOG_LEVEL || 'info',
-      transport: process.env.NODE_ENV === 'development' ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        }
-      } : undefined
-    }
+      transport:
+        process.env.NODE_ENV === 'development'
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
+    },
   });
-  
+
   // Register CORS
   await fastify.register(cors, {
     origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
-  
+
   // Register Swagger for API documentation
   if (process.env.NODE_ENV !== 'production') {
     await fastify.register(swagger, {
@@ -50,7 +53,7 @@ async function createServer() {
         info: {
           title: 'Cynosure Bridge API',
           description: 'OpenAI-compatible API for Claude Code SDK',
-          version: process.env.npm_package_version || '1.0.0'
+          version: process.env.npm_package_version || '1.0.0',
         },
         host: `localhost:${process.env.PORT || 3000}`,
         schemes: ['http'],
@@ -59,67 +62,67 @@ async function createServer() {
         tags: [
           { name: 'chat', description: 'Chat completions endpoints' },
           { name: 'models', description: 'Available models' },
-          { name: 'health', description: 'Health check' }
-        ]
-      }
+          { name: 'health', description: 'Health check' },
+        ],
+      },
     });
-    
+
     await fastify.register(swaggerUI, {
       routePrefix: '/docs',
       uiConfig: {
         docExpansion: 'full',
-        deepLinking: false
-      }
+        deepLinking: false,
+      },
     });
   }
-  
+
   // Register application routes
   await registerRoutes(fastify);
-  
+
   // Global error handler
   fastify.setErrorHandler((error, request, reply) => {
     fastify.log.error(error);
-    
+
     if (error.statusCode && error.statusCode < 500) {
       reply.status(error.statusCode).send({
         error: {
           message: error.message,
           type: 'invalid_request_error',
-          code: error.code
-        }
+          code: error.code,
+        },
       });
     } else {
       reply.status(500).send({
         error: {
           message: 'Internal server error',
-          type: 'internal_error'
-        }
+          type: 'internal_error',
+        },
       });
     }
   });
-  
+
   // 404 handler
   fastify.setNotFoundHandler((request, reply) => {
     reply.status(404).send({
       error: {
         message: `Route ${request.method} ${request.url} not found`,
-        type: 'not_found_error'
-      }
+        type: 'not_found_error',
+      },
     });
   });
-  
+
   return fastify;
 }
 
 async function start() {
   try {
     const fastify = await createServer();
-    
+
     const port = parseInt(process.env.PORT || '3000', 10);
     const host = process.env.HOST || '0.0.0.0';
-    
+
     await fastify.listen({ port, host });
-    
+
     console.log(`
 🚀 Cynosure Bridge is running!
 
@@ -141,7 +144,6 @@ async function start() {
    
 🧠 Powered by Claude Code SDK with MAX subscription
 `);
-    
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
@@ -160,7 +162,7 @@ process.on('SIGTERM', async () => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('💥 Uncaught Exception:', error);
   process.exit(1);
 });

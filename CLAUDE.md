@@ -44,6 +44,7 @@ npm run ci               # Full CI pipeline locally
 ## Architecture
 
 ### Request Flow
+
 1. OpenAI-compatible request → Fastify server (`/v1/chat/completions`)
 2. Translation layer converts to Claude format (`openai-to-claude.ts`)
 3. Claude CLI execution via temporary files (`src/claude/client.ts`)
@@ -53,23 +54,26 @@ npm run ci               # Full CI pipeline locally
 ### Critical Implementation Details
 
 **Claude CLI Integration** (`src/claude/client.ts`):
+
 - Uses local Claude executable at `/Users/laptop/.claude/local/claude`
 - Writes prompts to temporary files to avoid shell escaping issues
 - Supports both `--output-format json` and `--output-format stream-json`
 - Handles exit code 1 gracefully (parses stdout even on error)
 
 **Model Mapping**:
+
 ```typescript
 const MODEL_MAPPINGS = {
   'gpt-4': 'claude-3-opus-20240229',
   'gpt-4-turbo': 'claude-3-5-sonnet-20241022',
   'gpt-3.5-turbo': 'claude-3-haiku-20240307',
   'gpt-4o': 'claude-3-5-sonnet-20241022',
-  'gpt-4o-mini': 'claude-3-haiku-20240307'
+  'gpt-4o-mini': 'claude-3-haiku-20240307',
 };
 ```
 
 **Streaming Architecture**:
+
 - Uses Server-Sent Events (SSE) for streaming responses
 - Implements proper `data: ` prefix and `data: [DONE]` termination
 - Handles streaming errors gracefully with error events
@@ -123,12 +127,14 @@ curl http://localhost:3000/v1/models
 ## Git Workflow
 
 ### Branches
+
 - `master` - Production-ready code
 - `dev` - Development integration branch
 - `feat/feature-name` - Feature branches
 - `fix/bug-name` - Bug fix branches
 
 ### Development Process
+
 1. Create feature branch from `dev`
 2. Implement changes with tests
 3. Run `npm run precommit` before commit
@@ -139,7 +145,7 @@ curl http://localhost:3000/v1/models
 ## Project Structure
 
 - `src/claude/` - Claude CLI integration and execution logic
-- `src/server/` - HTTP server and API route handlers  
+- `src/server/` - HTTP server and API route handlers
 - `src/translation/` - OpenAI ↔ Claude format conversion
 - `src/models/` - TypeScript interfaces and schemas
 - `src/utils/` - Helper functions (ID generation, token counting)
@@ -150,18 +156,21 @@ curl http://localhost:3000/v1/models
 ## Code Quality
 
 ### ESLint Configuration
+
 - TypeScript-specific rules
 - Consistent code style
 - Error prevention
 - Auto-fixable issues
 
 ### Prettier Configuration
+
 - Consistent formatting
 - 2-space indentation
 - Single quotes
 - Trailing commas
 
 ### Testing Strategy
+
 - Unit tests for individual functions
 - Integration tests for API routes
 - E2E tests for full request flow
