@@ -6,16 +6,16 @@ import {
   OpenAIChatCompletionResponse, 
   OpenAIChatCompletionChunk,
   OpenAIChoice,
-  OpenAIUsage,
-  OpenAIMessage
+  OpenAIUsage
+  // OpenAIMessage - keeping for future use
 } from '../models/openai.js';
 import { ClaudeCodeResponse, ClaudeCodeMessage, mapClaudeModelToOpenAI } from '../models/claude.js';
 import { generateId } from '../utils/helpers.js';
 
 export function translateClaudeResponseToOpenAI(
   claudeResponse: ClaudeCodeResponse,
-  originalModel: string,
-  streaming: boolean = false
+  originalModel: string
+  // streaming: boolean = false - keeping for future streaming support
 ): OpenAIChatCompletionResponse {
   
   const openaiModel = mapClaudeModelToOpenAI(claudeResponse.model) || originalModel;

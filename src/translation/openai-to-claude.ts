@@ -3,7 +3,8 @@
  */
 
 import { OpenAIChatCompletionRequest, OpenAIMessage } from '../models/openai.js';
-import { ClaudeCodeQuery, mapOpenAIModelToClaude } from '../models/claude.js';
+import { ClaudeCodeQuery } from '../models/claude.js';
+// import { mapOpenAIModelToClaude } from '../models/claude.js'; // Keeping for future use
 
 export function translateOpenAIRequestToClaudeCode(
   request: OpenAIChatCompletionRequest
@@ -16,7 +17,7 @@ export function translateOpenAIRequestToClaudeCode(
   const prompt = combineMessagesToPrompt(userMessages);
   
   // Map model from OpenAI to Claude
-  const claudeModel = mapOpenAIModelToClaude(request.model);
+  // const claudeModel = mapOpenAIModelToClaude(request.model); // Keeping for future model mapping
   
   // Calculate maxTurns based on request parameters
   const maxTurns = calculateMaxTurns(request);
