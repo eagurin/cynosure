@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.log
+*.pid
+*.seed
+*.pid.lock
+.nyc_output/
+.env
+.env.*
