@@ -12,15 +12,15 @@ import {
 import { ClaudeCodeClient } from '../claude/client.js';
 import { translateOpenAIRequestToClaudeCode } from '../translation/openai-to-claude.js';
 import { 
-  translateClaudeResponseToOpenAI,
-  createStreamingChunks 
+  translateClaudeResponseToOpenAI
+  // createStreamingChunks - unused, keeping for future streaming support
 } from '../translation/claude-to-openai.js';
 import { formatSSE, createOpenAIError, sanitizeModelName } from '../utils/helpers.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   
   // Health check endpoint
-  fastify.get('/health', async (request, reply) => {
+  fastify.get('/health', async (_request, _reply) => {
     return { 
       status: 'ok', 
       service: 'cynosure-bridge',
@@ -30,7 +30,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   });
   
   // OpenAI-compatible models endpoint
-  fastify.get('/v1/models', async (request, reply) => {
+  fastify.get('/v1/models', async (_request, _reply) => {
     return {
       object: 'list',
       data: [
@@ -207,7 +207,7 @@ async function handleStreamingRequest(
   });
   
   try {
-    let messageIndex = 0;
+    // let messageIndex = 0; // Keeping for future streaming enhancements
     
     for await (const message of claudeClient.executeStreaming(claudeQuery)) {
       if (message.type === 'error') {
@@ -234,7 +234,7 @@ async function handleStreamingRequest(
         
         const sseData = formatSSE(chunk);
         reply.raw.write(sseData);
-        messageIndex++;
+        // messageIndex++; // Keeping for future streaming enhancements
       }
     }
     

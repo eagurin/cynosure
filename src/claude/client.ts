@@ -196,7 +196,7 @@ export class ClaudeCodeClient {
       const queryFn = await this.initializeQuery();
       
       // Execute Claude Code query with proper error handling
-      const startTime = Date.now();
+      // const startTime = Date.now();
       
       const queryOptions = {
         prompt: claudeQuery.prompt,
@@ -224,7 +224,7 @@ export class ClaudeCodeClient {
         messages.push(claudeMessage);
       }
       
-      const endTime = Date.now();
+      // const endTime = Date.now();
       const totalContent = messages.map(m => m.content).join('\n');
       
       return {
