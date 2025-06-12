@@ -5,7 +5,7 @@ describe('server integration', () => {
     // Placeholder test to prevent CI failure
     expect(true).toBe(true);
   });
-  
+
   // TODO: Add real integration tests
   // - Test server startup
   // - Test API endpoints

@@ -5,7 +5,7 @@ describe('e2e API tests', () => {
     // Placeholder test to prevent CI failure
     expect(true).toBe(true);
   });
-  
+
   // TODO: Add real E2E tests
   // - Test full request/response flow
   // - Test streaming responses
