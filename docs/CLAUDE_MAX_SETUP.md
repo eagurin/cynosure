@@ -21,6 +21,7 @@ claude auth status
 Токены хранятся в локальных файлах Claude. Найди их:
 
 **macOS/Linux:**
+
 ```bash
 # Путь к файлам конфигурации
 ls ~/.claude/
@@ -31,6 +32,7 @@ cat ~/.claude/config.json
 ```
 
 **Windows:**
+
 ```bash
 # Путь для Windows
 ls %USERPROFILE%\.claude\
@@ -74,16 +76,20 @@ type %USERPROFILE%\.claude\auth.json
 ## 🎯 Как использовать
 
 ### Автоматический Code Review
+
 Просто создай Pull Request - Claude автоматически проведёт review!
 
 ### Ручной Code Assistant
+
 1. **Actions tab** → "Claude Code Assist"
 2. **Run workflow**
 3. Введи задачу: "Add error handling to API routes"
 4. Claude создаст PR с изменениями!
 
 ### Quick Fixes
+
 Комментируй в любом PR:
+
 ```
 /claude fix missing TypeScript types in helpers.ts
 ```
@@ -91,6 +97,7 @@ type %USERPROFILE%\.claude\auth.json
 ## 🔍 Отладка
 
 ### Проблема: "Authentication failed"
+
 ```bash
 # Обнови токены
 claude auth login
@@ -100,11 +107,13 @@ cat ~/.claude/auth.json
 ```
 
 ### Проблема: "Action failed"
+
 1. Проверь что все 3 секрета добавлены
 2. Убедись что токены актуальные
 3. Проверь логи в Actions tab
 
 ### Проблема: "Token expired"
+
 ```bash
 # Перелогинься в Claude
 claude auth logout
@@ -118,12 +127,14 @@ claude auth login
 Если файлы auth.json недоступны, попробуй:
 
 ### Через браузер
+
 1. Открой Claude в браузере
 2. F12 → Network tab
 3. Найди запросы к claude.ai
 4. Скопируй Authorization header
 
 ### Через Claude CLI в debug режиме
+
 ```bash
 # Запусти Claude в verbose режиме
 claude --verbose auth status
@@ -132,7 +143,7 @@ claude --verbose auth status
 CLAUDE_DEBUG=1 claude auth status
 ```
 
-## 🎉 Готово!
+## 🎉 Готово
 
 Теперь у тебя есть полноценный AI Code Assistant, работающий с твоей Claude MAX подпиской:
 
