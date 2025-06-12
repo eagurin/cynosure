@@ -12,6 +12,7 @@ Cynosure Bridge solves the geographical limitations of Claude MAX subscription b
 ## 🎯 Key Features
 
 ### Core Functionality (✅ Available)
+
 - **Full OpenAI API Compatibility** - Use existing applications without modifications
 - **Claude MAX Subscription Support** - Bypass regional limitations through Claude Code SDK  
 - **Streaming Responses** - Real-time streaming response support
@@ -20,6 +21,7 @@ Cynosure Bridge solves the geographical limitations of Claude MAX subscription b
 - **Production Ready** - Comprehensive CI/CD, testing, and documentation
 
 ### Planned Features (🔄 Coming Soon)
+
 - **MCP Protocol Support** - Extended capabilities through Model Context Protocol ([#24](https://github.com/eagurin/cynosure/issues/24))
 - **Embeddings Endpoint** - `/v1/embeddings` support ([#13](https://github.com/eagurin/cynosure/issues/13))
 - **Function Calling** - OpenAI tools/functions support ([#17](https://github.com/eagurin/cynosure/issues/17))
@@ -46,6 +48,7 @@ graph LR
 ```
 
 **Request Flow:**
+
 1. OpenAI-compatible request → Fastify server
 2. Request validation and model mapping
 3. Translation to Claude format
@@ -168,7 +171,7 @@ curl -X POST http://localhost:3000/v1/chat/completions \\
 
 ## 🏗️ Архитектура
 
-```
+```bash
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Your App     │    │  Cynosure Bridge │    │  Claude Code    │
 │                │────▶│                  │────▶│     SDK         │
@@ -194,25 +197,25 @@ curl -X POST http://localhost:3000/v1/chat/completions \\
 
 ### Health Check
 
-```
+```bash
 GET /health
 ```
 
 ### Models List  
 
-```
+```bash
 GET /v1/models
 ```
 
 ### Chat Completions
 
-```
+```bash
 POST /v1/chat/completions
 ```
 
 ### API Documentation
 
-```
+```bash
 GET /docs (development only)
 ```
 
@@ -270,7 +273,7 @@ npm run typecheck    # TypeScript type checking
 
 ### Project Structure
 
-```
+```bash
 cynosure/
 ├── src/
 │   ├── server/           # HTTP server & routes
@@ -394,7 +397,7 @@ API_KEY=your-secure-api-key
 
 Clients must include:
 
-```
+```bash
 Authorization: Bearer your-secure-api-key
 ```
 
