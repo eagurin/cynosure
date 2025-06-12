@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  cynosure:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: cynosure-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WORKING_DIRECTORY=/app
+      - MAX_TURNS=5
+      - TIMEOUT=300000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    working_dir: /app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cynosure-network
+
+  # Production service (commented out by default)
+  # cynosure-prod:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile
+  #     target: production
+  #   container_name: cynosure-prod
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=3000
+  #     - HOST=0.0.0.0
+  #     - LOG_LEVEL=warn
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - MAX_TURNS=5
+  #     - TIMEOUT=300000
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - cynosure-network
+
+networks:
+  cynosure-network:
+    driver: bridge
