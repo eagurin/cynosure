@@ -18,10 +18,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci --only=production
-
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm ci --omit=dev
 
 # Development stage
 FROM base AS development
@@ -54,10 +51,7 @@ WORKDIR /app
 
 # Copy package files and install production dependencies
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
-
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy built application
 COPY --from=build --chown=cynosure:nodejs /app/dist ./dist
