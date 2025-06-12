@@ -1,21 +1,67 @@
 # 🌟 Cynosure Bridge
 
-**OpenAI-compatible** API proxy для Claude Code SDK с поддержкой MAX subscription
+**OpenAI-compatible API proxy for Claude Code SDK** - enabling Claude MAX subscription usage worldwide
 
-Cynosure Bridge решает проблему географических ограничений Claude MAX subscription путём создания локального API моста, совместимого с OpenAI API, использующего Claude Code SDK под капотом.
+![Build Status](https://github.com/eagurin/cynosure/workflows/CI/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node.js-18%2B-green.svg)
+![TypeScript](https://img.shields.io/badge/typescript-5.0%2B-blue.svg)
 
-## 🎯 Основные возможности
+Cynosure Bridge solves the geographical limitations of Claude MAX subscription by creating a local API bridge that's fully compatible with OpenAI API, using Claude Code SDK under the hood.
 
-- ✅ **Полная совместимость с OpenAI API** - используйте существующие приложения без изменений
-- ✅ **Claude MAX subscription** - обход региональных ограничений через Claude Code SDK  
-- ✅ **Streaming responses** - поддержка потоковых ответов в реальном времени
-- ✅ **MCP Protocol** - расширенные возможности через Model Context Protocol
-- ✅ **Context awareness** - понимание структуры проекта и кодовой базы
-- ✅ **Git integration** - автоматическая работа с Git репозиториями
-- ✅ **Tool usage** - поддержка инструментов и функций Claude Code
-- ✅ **Auto model mapping** - автоматическое сопоставление моделей OpenAI ↔ Claude
+## 🎯 Key Features
 
-## 🚀 Быстрый старт
+### Core Functionality (✅ Available)
+- **Full OpenAI API Compatibility** - Use existing applications without modifications
+- **Claude MAX Subscription Support** - Bypass regional limitations through Claude Code SDK  
+- **Streaming Responses** - Real-time streaming response support
+- **Automatic Model Mapping** - Seamless OpenAI ↔ Claude model translation
+- **Docker Ready** - Containerized deployment support
+- **Production Ready** - Comprehensive CI/CD, testing, and documentation
+
+### Planned Features (🔄 Coming Soon)
+- **MCP Protocol Support** - Extended capabilities through Model Context Protocol ([#24](https://github.com/eagurin/cynosure/issues/24))
+- **Embeddings Endpoint** - `/v1/embeddings` support ([#13](https://github.com/eagurin/cynosure/issues/13))
+- **Function Calling** - OpenAI tools/functions support ([#17](https://github.com/eagurin/cynosure/issues/17))
+- **Redis Caching** - Performance optimization layer ([#16](https://github.com/eagurin/cynosure/issues/16))
+- **API Authentication** - Secure API key management ([#15](https://github.com/eagurin/cynosure/issues/15))
+- **Context Awareness** - Project structure understanding ([#26](https://github.com/eagurin/cynosure/issues/26))
+- **Git Integration** - Automatic Git repository operations ([#27](https://github.com/eagurin/cynosure/issues/27))
+
+## 🏗️ Architecture
+
+```mermaid
+graph LR
+    A[OpenAI Client] -->|HTTP Request| B[Cynosure Bridge]
+    B -->|Translate| C[Claude Code CLI]
+    C -->|Execute| D[Claude API]
+    D -->|Response| C
+    C -->|Output| B
+    B -->|Translate| A
+    
+    B --> E[Request Validation]
+    B --> F[Model Mapping]
+    B --> G[Response Translation]
+    B --> H[Streaming Handler]
+```
+
+**Request Flow:**
+1. OpenAI-compatible request → Fastify server
+2. Request validation and model mapping
+3. Translation to Claude format
+4. Claude CLI execution with temp files
+5. Response translation back to OpenAI format
+6. SSE streaming or JSON response
+
+## 📊 Project Status
+
+- **🟢 Stable**: Core API functionality, Docker support
+- **🟡 Beta**: CI/CD pipeline, documentation  
+- **🔴 Alpha**: Advanced features (MCP, caching, auth)
+
+**Current Version**: `v1.0.0` ([Changelog](https://github.com/eagurin/cynosure/releases))
+
+## 🚀 Quick Start
 
 ### 1. Установка
 
