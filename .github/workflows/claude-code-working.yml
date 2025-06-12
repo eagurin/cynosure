@@ -64,7 +64,7 @@ jobs:
         
     - name: Execute Claude Task
       id: claude-execute
-      uses: grll/claude-code-base-action@v1
+      uses: anthropics/claude-code-action@beta
       with:
         prompt: |
           You are working on the Cynosure Bridge project - an OpenAI API-compatible proxy for Claude.
@@ -88,10 +88,9 @@ jobs:
           **Available Tools:** read, write, edit, bash, search
           
           Please analyze the codebase and implement the requested changes.
-        anthropic_access_token: ${{ secrets.ANTHROPIC_ACCESS_TOKEN }}
-        anthropic_refresh_token: ${{ secrets.ANTHROPIC_REFRESH_TOKEN }}
-        anthropic_expires_at: ${{ secrets.ANTHROPIC_EXPIRES_AT }}
-        allowed_tools: "read,write,edit,bash,search"
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      env:
+        ACTIONS_STEP_DEBUG: true
         
     - name: Run Quality Checks
       run: |

@@ -49,7 +49,7 @@ jobs:
         
     - name: Claude Code Review (MAX Subscription)
       id: claude-analysis
-      uses: grll/claude-code-base-action@v1
+      uses: anthropics/claude-code-action@beta
       with:
         prompt: |
           Please review the following Pull Request for the Cynosure Bridge project.
@@ -91,10 +91,9 @@ jobs:
           
           Please provide a comprehensive review with specific recommendations.
           Focus on maintaining the proxy's reliability and OpenAI compatibility.
-        anthropic_access_token: ${{ secrets.ANTHROPIC_ACCESS_TOKEN }}
-        anthropic_refresh_token: ${{ secrets.ANTHROPIC_REFRESH_TOKEN }}
-        anthropic_expires_at: ${{ secrets.ANTHROPIC_EXPIRES_AT }}
-        allowed_tools: "read,search"
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      env:
+        ACTIONS_STEP_DEBUG: true
         
     - name: Post Review Comment
       if: success()
@@ -150,7 +149,7 @@ jobs:
         echo "fix_request=$FIX_REQUEST" >> $GITHUB_OUTPUT
         
     - name: Apply Claude Code Fix (MAX Subscription)
-      uses: grll/claude-code-base-action@v1
+      uses: anthropics/claude-code-action@beta
       with:
         prompt: |
           Fix Request: ${{ steps.parse-request.outputs.fix_request }}
@@ -175,10 +174,9 @@ jobs:
           6. Run linting and formatting if needed
           
           Please implement the fix and ensure all checks pass.
-        anthropic_access_token: ${{ secrets.ANTHROPIC_ACCESS_TOKEN }}
-        anthropic_refresh_token: ${{ secrets.ANTHROPIC_REFRESH_TOKEN }}
-        anthropic_expires_at: ${{ secrets.ANTHROPIC_EXPIRES_AT }}
-        allowed_tools: "read,write,edit,bash"
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      env:
+        ACTIONS_STEP_DEBUG: true
         
     - name: Create Fix Commit
       run: |

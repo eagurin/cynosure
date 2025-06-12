@@ -35,7 +35,7 @@ jobs:
         
     - name: Execute Claude Code Task (MAX Subscription)
       id: claude-task
-      uses: grll/claude-code-base-action@v1
+      uses: anthropics/claude-code-action@beta
       with:
         prompt: |
           You are working on the Cynosure Bridge project, an OpenAI API-compatible proxy for Claude.
@@ -68,10 +68,9 @@ jobs:
           8. Update documentation if needed
           
           Please analyze the codebase and implement the requested changes following the established patterns.
-        anthropic_access_token: ${{ secrets.ANTHROPIC_ACCESS_TOKEN }}
-        anthropic_refresh_token: ${{ secrets.ANTHROPIC_REFRESH_TOKEN }}
-        anthropic_expires_at: ${{ secrets.ANTHROPIC_EXPIRES_AT }}
-        allowed_tools: "read,write,edit,bash,search"
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      env:
+        ACTIONS_STEP_DEBUG: true
         
     - name: Run Tests
       run: |
@@ -159,7 +158,7 @@ jobs:
         echo "fix_request=$FIX" >> $GITHUB_OUTPUT
         
     - name: Apply Quick Fix (MAX Subscription)
-      uses: grll/claude-code-base-action@v1
+      uses: anthropics/claude-code-action@beta
       with:
         prompt: |
           Quick Fix Request: ${{ steps.parse.outputs.fix_request }}
@@ -186,10 +185,9 @@ jobs:
           4. Follow project conventions
           
           Please apply the requested quick fix efficiently.
-        anthropic_access_token: ${{ secrets.ANTHROPIC_ACCESS_TOKEN }}
-        anthropic_refresh_token: ${{ secrets.ANTHROPIC_REFRESH_TOKEN }}
-        anthropic_expires_at: ${{ secrets.ANTHROPIC_EXPIRES_AT }}
-        allowed_tools: "read,write,edit,bash"
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      env:
+        ACTIONS_STEP_DEBUG: true
         
     - name: Comment Result
       uses: actions/github-script@v7
