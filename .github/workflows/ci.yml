@@ -17,16 +17,15 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
     
     - name: Install dependencies
       run: |
-        # Retry npm ci up to 3 times to handle temporary registry issues
+        # Retry npm install up to 3 times to handle temporary registry issues
         for i in {1..3}; do
-          npm ci && break || {
-            echo "npm ci failed (attempt $i/3)"
+          npm install && break || {
+            echo "npm install failed (attempt $i/3)"
             if [ $i -eq 3 ]; then
-              echo "All npm ci attempts failed"
+              echo "All npm install attempts failed"
               exit 1
             fi
             sleep 10
@@ -54,16 +53,15 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
     
     - name: Install dependencies
       run: |
-        # Retry npm ci up to 3 times to handle temporary registry issues
+        # Retry npm install up to 3 times to handle temporary registry issues
         for i in {1..3}; do
-          npm ci && break || {
-            echo "npm ci failed (attempt $i/3)"
+          npm install && break || {
+            echo "npm install failed (attempt $i/3)"
             if [ $i -eq 3 ]; then
-              echo "All npm ci attempts failed"
+              echo "All npm install attempts failed"
               exit 1
             fi
             sleep 10
