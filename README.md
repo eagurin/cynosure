@@ -15,7 +15,7 @@ Cynosure Bridge is a **production-ready OpenAI-compatible proxy** that enables C
 
 - **🌐 Network Proxy Server** - Share Claude MAX across multiple devices/applications
 - **🏠 Local Development Mode** - Direct localhost access for development
-- **🤖 GitHub Actions Integration** - Self-hosted runner support with @claude comments  
+- **🤖 GitHub Actions Integration** - Self-hosted runner support with @claude comments
 - **⚡ Full OpenAI API Compatibility** - Drop-in replacement for existing applications
 - **🔄 Streaming Responses** - Real-time SSE streaming support
 - **🗺️ Automatic Model Mapping** - Seamless OpenAI ↔ Claude model translation
@@ -38,7 +38,7 @@ Cynosure Bridge is a **production-ready OpenAI-compatible proxy** that enables C
 ### 🔄 **Coming Soon**
 
 - **🔌 WebSocket Support** - Real-time bidirectional communication (documented, implementation ready)
-- **🧩 MCP Protocol Support** - Extended capabilities through Model Context Protocol  
+- **🧩 MCP Protocol Support** - Extended capabilities through Model Context Protocol
 - **⚙️ Function Calling** - OpenAI tools/functions support (architecture complete)
 - **🚄 Redis Caching** - Performance optimization layer
 - **📋 Structured Output** - Schema-based JSON responses
@@ -54,9 +54,9 @@ graph TB
     B[Web Apps] -->|HTTP| E
     C[GitHub Actions] -->|localhost| E
     D[Other Devices] -->|192.168.1.196:3000| E
-    
+
     E -->|Claude CLI| F[Claude MAX Subscription]
-    
+
     E --> G[Health Monitoring]
     E --> H[Request Logging]
     E --> I[Auto Restart]
@@ -74,7 +74,7 @@ graph TB
 ## 📊 Project Status
 
 - **🟢 Production Ready**: Core API, Network Proxy, Factory Management
-- **🟡 Stable**: GitHub Actions Integration, Docker Support  
+- **🟡 Stable**: GitHub Actions Integration, Docker Support
 - **🔵 Planned**: WebSocket Support, Advanced Features
 
 **Current Version**: `v2.0.0` - **Network Proxy Edition**
@@ -112,7 +112,7 @@ curl -X POST http://192.168.1.196:3000/v1/chat/completions \
 # Simple management
 ./scripts/cynosure-local.sh status|start|stop|test
 
-# Advanced factory management  
+# Advanced factory management
 ./scripts/cynosure-factory-simple.sh status|start|stop|monitor
 
 # GitHub Actions runner setup
@@ -146,7 +146,7 @@ nohup ./run.sh > runner.log 2>&1 &
 
 ```
 @claude Explain this code
-@claude Find bugs in this function  
+@claude Find bugs in this function
 @claude Create tests for this API
 ```
 
@@ -154,21 +154,21 @@ nohup ./run.sh > runner.log 2>&1 &
 
 ### **Chat Models** (Latest Versions)
 
-| OpenAI Model    | Claude Model                 | Performance   | Release Date | Context |
-|-----------------|------------------------------|---------------|--------------|---------|
-| `gpt-4`         | `claude-3-5-sonnet-20241022` | Best Quality  | Oct 2024     | 200K    |
-| `gpt-4-turbo`   | `claude-3-5-sonnet-20241022` | Balanced      | Oct 2024     | 200K    |
-| `gpt-3.5-turbo` | `claude-3-5-haiku-20241022`  | Fast          | Oct 2024     | 200K    |
-| `gpt-4o`        | `claude-3-5-sonnet-20241022` | Latest        | Oct 2024     | 200K    |
-| `gpt-4o-mini`   | `claude-3-5-haiku-20241022`  | Optimized     | Oct 2024     | 200K    |
+| OpenAI Model    | Claude Model                 | Performance  | Release Date | Context |
+| --------------- | ---------------------------- | ------------ | ------------ | ------- |
+| `gpt-4`         | `claude-3-5-sonnet-20241022` | Best Quality | Oct 2024     | 200K    |
+| `gpt-4-turbo`   | `claude-3-5-sonnet-20241022` | Balanced     | Oct 2024     | 200K    |
+| `gpt-3.5-turbo` | `claude-3-5-haiku-20241022`  | Fast         | Oct 2024     | 200K    |
+| `gpt-4o`        | `claude-3-5-sonnet-20241022` | Latest       | Oct 2024     | 200K    |
+| `gpt-4o-mini`   | `claude-3-5-haiku-20241022`  | Optimized    | Oct 2024     | 200K    |
 
 ### **Embedding Models**
 
-| OpenAI Embedding Model      | Claude Alternative           | Dimensions | Performance |
-|-----------------------------|------------------------------|------------|-------------|
-| `text-embedding-3-small`    | `claude-3-5-sonnet-20241022` | 1536       | Fast        |
-| `text-embedding-3-large`    | `claude-3-5-sonnet-20241022` | 3072       | High Quality|
-| `text-embedding-ada-002`    | `claude-3-5-haiku-20241022`  | 1536       | Compatible  |
+| OpenAI Embedding Model   | Claude Alternative           | Dimensions | Performance  |
+| ------------------------ | ---------------------------- | ---------- | ------------ |
+| `text-embedding-3-small` | `claude-3-5-sonnet-20241022` | 1536       | Fast         |
+| `text-embedding-3-large` | `claude-3-5-sonnet-20241022` | 3072       | High Quality |
+| `text-embedding-ada-002` | `claude-3-5-haiku-20241022`  | 1536       | Compatible   |
 
 ### **Popular Model Combinations**
 
@@ -214,7 +214,7 @@ Full OpenAI API compatibility for vector embeddings. See [Cookbook](cookbook/) f
 # Start/stop/restart
 ./scripts/cynosure-local.sh start|stop|restart
 
-# Test API functionality  
+# Test API functionality
 ./scripts/cynosure-local.sh test
 
 # Advanced factory with monitoring
@@ -243,7 +243,7 @@ Full OpenAI API compatibility for vector embeddings. See [Cookbook](cookbook/) f
 # Restrict CORS origins
 export CORS_ORIGINS="https://myapp.com,http://192.168.1.0/24"
 
-# Add API key authentication  
+# Add API key authentication
 export PROXY_API_KEYS="team-key-1,mobile-key-2"
 
 # Rate limiting
@@ -252,13 +252,13 @@ export RATE_LIMIT_PER_MINUTE=100
 
 ### **Environment Configuration**
 
-| Variable | Description | Default | Network Ready |
-|----------|-------------|---------|---------------|
-| `PORT` | Server port | `3000` | ✅ |
-| `HOST` | Server host | `0.0.0.0` | ✅ |
-| `NODE_ENV` | Environment | `development` | ✅ |
-| `WORKING_DIRECTORY` | Claude workspace | `cwd()` | ✅ |
-| `MAX_TURNS` | Conversation turns | `5` | ✅ |
+| Variable            | Description        | Default       | Network Ready |
+| ------------------- | ------------------ | ------------- | ------------- |
+| `PORT`              | Server port        | `3000`        | ✅            |
+| `HOST`              | Server host        | `0.0.0.0`     | ✅            |
+| `NODE_ENV`          | Environment        | `development` | ✅            |
+| `WORKING_DIRECTORY` | Claude workspace   | `cwd()`       | ✅            |
+| `MAX_TURNS`         | Conversation turns | `5`           | ✅            |
 
 ## 🐳 Docker Deployment
 
@@ -281,9 +281,9 @@ services:
   cynosure:
     build: .
     ports:
-      - '3000:3000'  # External network access
+      - '3000:3000' # External network access
     environment:
-      - HOST=0.0.0.0  # Accept external connections
+      - HOST=0.0.0.0 # Accept external connections
       - NODE_ENV=production
     restart: unless-stopped
     networks:
@@ -295,7 +295,7 @@ services:
 ### **Performance Comparison**
 
 - **Local Connection**: ~5.4 seconds average response
-- **Network Connection**: ~5.6 seconds average response  
+- **Network Connection**: ~5.6 seconds average response
 - **vs Tunnel Solutions**: **22% faster** than ngrok-based approaches
 
 ### **Economic Benefits**
@@ -316,7 +316,7 @@ services:
 ### **Complete Guides**
 
 - [📖 Network Proxy Setup](docs/NETWORK_PROXY_SETUP.md)
-- [🔧 Self-Hosted Runner Guide](docs/SELF_HOSTED_SETUP.md)  
+- [🔧 Self-Hosted Runner Guide](docs/SELF_HOSTED_SETUP.md)
 - [💻 Client Examples](docs/PROXY_CLIENT_EXAMPLES.md) (Python, JS, React, Mobile)
 - [🚀 Local Deployment](docs/LOCAL_DEPLOYMENT_COMPLETE.md)
 - [🔄 Migration Guide](docs/MIGRATION_PLAN.md)
@@ -334,16 +334,18 @@ services:
 ```javascript
 // WebSocket API (implementation ready)
 const ws = new WebSocket('ws://192.168.1.196:3000/v1/ws/chat');
-ws.send(JSON.stringify({
+ws.send(
+  JSON.stringify({
     model: 'gpt-4',
     messages: [{ role: 'user', content: 'Real-time chat!' }],
-    stream: true
-}));
+    stream: true,
+  })
+);
 
 // Receive streaming responses
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log('Claude response:', data);
+ws.onmessage = event => {
+  const data = JSON.parse(event.data);
+  console.log('Claude response:', data);
 };
 ```
 
@@ -384,7 +386,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 **Cynosure Bridge is production-ready and available on your network:**
 
 - 🌐 **Network URL**: `http://192.168.1.196:3000/v1`
-- 🏠 **Local URL**: `http://localhost:3000/v1`  
+- 🏠 **Local URL**: `http://localhost:3000/v1`
 - 🔧 **Management**: `./scripts/cynosure-local.sh status`
 - 📱 **Client Examples**: See `docs/PROXY_CLIENT_EXAMPLES.md`
 

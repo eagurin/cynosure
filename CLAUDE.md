@@ -116,7 +116,7 @@ const MODEL_MAPPINGS = {
   'gpt-3.5-turbo': 'claude-3-5-haiku-20241022',
   'gpt-4o': 'claude-3-5-sonnet-20241022',
   'gpt-4o-mini': 'claude-3-5-haiku-20241022',
-  
+
   // Legacy mappings
   'gpt-4-legacy': 'claude-3-opus-20240229',
   'gpt-3.5-turbo-legacy': 'claude-3-haiku-20240307',
@@ -124,7 +124,7 @@ const MODEL_MAPPINGS = {
 
 // Embedding models (via synthetic generation)
 const EMBEDDING_MODELS = {
-  'text-embedding-3-small': 1536,  // dimensions
+  'text-embedding-3-small': 1536, // dimensions
   'text-embedding-3-large': 3072,
   'text-embedding-ada-002': 1536,
 };
@@ -294,10 +294,12 @@ launchctl load ~/Library/LaunchAgents/com.cynosure.factory.plist
 ```javascript
 // WebSocket connection for bidirectional communication
 const ws = new WebSocket('ws://192.168.1.196:3000/v1/ws/chat');
-ws.send(JSON.stringify({
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'Real-time chat!' }]
-}));
+ws.send(
+  JSON.stringify({
+    model: 'gpt-4',
+    messages: [{ role: 'user', content: 'Real-time chat!' }],
+  })
+);
 ```
 
 ### Function Calling
@@ -305,7 +307,7 @@ ws.send(JSON.stringify({
 ```javascript
 // Tool/function calling support
 {
-  "model": "gpt-4", 
+  "model": "gpt-4",
   "messages": [...],
   "tools": [{
     "type": "function",
@@ -328,7 +330,7 @@ ws.send(JSON.stringify({
   "response_format": {
     "type": "json_schema",
     "json_schema": {
-      "name": "math_response", 
+      "name": "math_response",
       "schema": {...}
     }
   }

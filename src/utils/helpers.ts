@@ -90,7 +90,7 @@ export const MODEL_MAPPINGS: Record<string, string> = {
   'gpt-3.5-turbo': 'claude-3-5-haiku-20241022',
   'gpt-4o': 'claude-3-5-sonnet-20241022',
   'gpt-4o-mini': 'claude-3-5-haiku-20241022',
-  
+
   // Legacy mappings
   'gpt-4-legacy': 'claude-3-opus-20240229',
   'gpt-3.5-turbo-legacy': 'claude-3-haiku-20240307',
