@@ -1,0 +1,175 @@
+name: Test Local Direct Access
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode: local or tunnel'
+        required: true
+        default: 'local'
+        type: choice
+        options:
+          - local
+          - tunnel
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  test-local-access:
+    runs-on: self-hosted
+    if: inputs.test_mode == 'local'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Test Direct Local Access
+        id: test_local
+        run: |
+          echo "🔍 Тестируем прямое подключение к localhost:3000"
+          
+          # Проверяем что Cynosure Bridge работает локально
+          if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "✅ Локальный сервер доступен"
+            HEALTH=$(curl -s http://localhost:3000/health)
+            echo "health_response=$HEALTH" >> $GITHUB_OUTPUT
+            echo "local_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Локальный сервер недоступен"
+            echo "local_status=error" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Test Claude Request Locally
+        if: steps.test_local.outputs.local_status == 'success'
+        id: test_claude_local
+        run: |
+          echo "🤖 Тестируем Claude запрос через localhost"
+          
+          RESPONSE=$(curl -s -X POST http://localhost:3000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer test-local" \
+            -d '{
+              "model": "gpt-4",
+              "messages": [
+                {
+                  "role": "user", 
+                  "content": "Привет! Это тест локального подключения без туннеля. Ответь кратко что ты Claude через Cynosure Bridge."
+                }
+              ],
+              "max_tokens": 100
+            }')
+          
+          echo "📝 Ответ Claude через localhost:"
+          echo "$RESPONSE"
+          
+          if echo "$RESPONSE" | jq . > /dev/null 2>&1; then
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "Ошибка извлечения ответа"')
+            echo "claude_response=$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+            echo "claude_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "claude_status=error" >> $GITHUB_OUTPUT
+          fi
+
+  test-tunnel-access:
+    runs-on: ubuntu-latest
+    if: inputs.test_mode == 'tunnel'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Test Tunnel Access
+        id: test_tunnel
+        run: |
+          echo "🔍 Тестируем подключение через ngrok туннель"
+          
+          TUNNEL_URL="https://45c0-85-159-229-107.ngrok-free.app"
+          
+          if curl -f "$TUNNEL_URL/health" > /dev/null 2>&1; then
+            echo "✅ Туннель доступен: $TUNNEL_URL"
+            HEALTH=$(curl -s "$TUNNEL_URL/health")
+            echo "health_response=$HEALTH" >> $GITHUB_OUTPUT
+            echo "tunnel_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Туннель недоступен: $TUNNEL_URL"
+            echo "tunnel_status=error" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Test Claude Request via Tunnel
+        if: steps.test_tunnel.outputs.tunnel_status == 'success'
+        id: test_claude_tunnel
+        run: |
+          echo "🤖 Тестируем Claude запрос через туннель"
+          
+          TUNNEL_URL="https://45c0-85-159-229-107.ngrok-free.app"
+          
+          RESPONSE=$(curl -s -X POST "$TUNNEL_URL/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer test-tunnel" \
+            -d '{
+              "model": "gpt-4",
+              "messages": [
+                {
+                  "role": "user", 
+                  "content": "Привет! Это тест через ngrok туннель. Ответь кратко что ты Claude через Cynosure Bridge."
+                }
+              ],
+              "max_tokens": 100
+            }')
+          
+          echo "📝 Ответ Claude через туннель:"
+          echo "$RESPONSE"
+          
+          if echo "$RESPONSE" | jq . > /dev/null 2>&1; then
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "Ошибка извлечения ответа"')
+            echo "claude_response=$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+            echo "claude_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "claude_status=error" >> $GITHUB_OUTPUT
+          fi
+
+  comparison-summary:
+    runs-on: ubuntu-latest
+    needs: [test-local-access, test-tunnel-access]
+    if: always()
+    
+    steps:
+      - name: Create Comparison Summary
+        run: |
+          echo "## 🔍 Сравнение: Локальное подключение vs Туннель" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📊 Результаты тестирования" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ inputs.test_mode }}" == "local" ]]; then
+            if [[ "${{ needs.test-local-access.outputs.local_status }}" == "success" ]]; then
+              echo "✅ **Локальное подключение: РАБОТАЕТ**" >> $GITHUB_STEP_SUMMARY
+              echo "- Прямой доступ к localhost:3000" >> $GITHUB_STEP_SUMMARY
+              echo "- Без внешних зависимостей" >> $GITHUB_STEP_SUMMARY
+              echo "- Быстрее и надёжнее" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Локальное подключение: НЕ РАБОТАЕТ**" >> $GITHUB_STEP_SUMMARY
+              echo "- Нужен self-hosted runner" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            if [[ "${{ needs.test-tunnel-access.outputs.tunnel_status }}" == "success" ]]; then
+              echo "✅ **Туннель: РАБОТАЕТ**" >> $GITHUB_STEP_SUMMARY
+              echo "- Через ngrok туннель" >> $GITHUB_STEP_SUMMARY
+              echo "- Требует внешний сервис" >> $GITHUB_STEP_SUMMARY
+              echo "- URL может изменяться" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Туннель: НЕ РАБОТАЕТ**" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Рекомендация" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Используй локальное подключение (self-hosted runner)**:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Быстрее (нет задержки туннеля)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Надёжнее (нет внешних зависимостей)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Безопаснее (нет внешнего доступа)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Проще (нет changeable URLs)" >> $GITHUB_STEP_SUMMARY

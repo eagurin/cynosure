@@ -81,11 +81,43 @@ export function createOpenAIError(
 }
 
 /**
+ * Model mapping configuration
+ */
+export const MODEL_MAPPINGS: Record<string, string> = {
+  // Chat models
+  'gpt-4': 'claude-3-5-sonnet-20241022',
+  'gpt-4-turbo': 'claude-3-5-sonnet-20241022',
+  'gpt-3.5-turbo': 'claude-3-5-haiku-20241022',
+  'gpt-4o': 'claude-3-5-sonnet-20241022',
+  'gpt-4o-mini': 'claude-3-5-haiku-20241022',
+  
+  // Legacy mappings
+  'gpt-4-legacy': 'claude-3-opus-20240229',
+  'gpt-3.5-turbo-legacy': 'claude-3-haiku-20240307',
+};
+
+/**
+ * Embedding models configuration
+ */
+export const EMBEDDING_MODELS: Record<string, number> = {
+  'text-embedding-3-small': 1536,
+  'text-embedding-3-large': 3072,
+  'text-embedding-ada-002': 1536,
+};
+
+/**
  * Sanitize and validate model name
  */
 export function sanitizeModelName(model: string): string {
   // Remove any potentially dangerous characters
   return model.replace(/[^a-zA-Z0-9\-._]/g, '');
+}
+
+/**
+ * Map OpenAI model to Claude model
+ */
+export function mapModelToClaud(openaiModel: string): string {
+  return MODEL_MAPPINGS[openaiModel] || openaiModel;
 }
 
 /**

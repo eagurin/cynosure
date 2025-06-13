@@ -1,0 +1,22 @@
+{
+  "factory": {
+    "name": "Cynosure Factory",
+    "version": "1.0.0",
+    "environment": "production",
+    "auto_restart": true,
+    "health_check_interval": 30,
+    "backup_retention_days": 7
+  },
+  "host": {
+    "primary_port": 3000,
+    "backup_ports": [3001, 3002, 3003],
+    "health_endpoint": "/health",
+    "metrics_endpoint": "/metrics"
+  },
+  "monitoring": {
+    "enabled": true,
+    "webhook_url": "",
+    "alert_on_failure": true,
+    "log_level": "info"
+  }
+}

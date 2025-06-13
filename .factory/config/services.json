@@ -1,0 +1,24 @@
+{
+  "services": {
+    "cynosure": {
+      "name": "Cynosure Bridge",
+      "command": "npm start",
+      "cwd": "",
+      "port": 3000,
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "3000"
+      },
+      "health_check": "http://localhost:3000/health",
+      "restart_policy": "always",
+      "max_restarts": 5,
+      "restart_delay": 5
+    },
+    "claude": {
+      "name": "Claude CLI Monitor",
+      "command": "echo 'test' | claude -p --output-format json",
+      "health_check": "claude --version",
+      "restart_policy": "on-failure"
+    }
+  }
+}

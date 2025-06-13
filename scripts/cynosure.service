@@ -1,0 +1,39 @@
+# Systemd service file for Cynosure Factory
+# Копировать в /etc/systemd/system/cynosure.service (Linux)
+# Или использовать launchd на macOS
+
+[Unit]
+Description=Cynosure Claude Bridge Factory
+Documentation=https://github.com/eagurin/cynosure
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+User=laptop
+Group=staff
+WorkingDirectory=/Users/laptop/dev/cynosure
+ExecStart=/Users/laptop/dev/cynosure/scripts/cynosure-factory.sh start
+ExecStop=/Users/laptop/dev/cynosure/scripts/cynosure-factory.sh stop
+ExecReload=/Users/laptop/dev/cynosure/scripts/cynosure-factory.sh restart
+Restart=always
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=30
+
+# Ограничения ресурсов
+MemoryLimit=1G
+CPUQuota=50%
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cynosure-factory
+
+# Переменные окружения
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/Users/laptop/.npm-global/bin
+
+[Install]
+WantedBy=multi-user.target

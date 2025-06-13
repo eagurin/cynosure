@@ -1,0 +1,238 @@
+name: Claude Factory Bridge
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for Claude'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-factory:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Get Tunnel URL
+        id: tunnel
+        run: |
+          # Попытка получить URL из файла репозитория
+          if [ -f ".github/TUNNEL_URL" ]; then
+            TUNNEL_URL=$(grep "TUNNEL_URL=" .github/TUNNEL_URL | cut -d'=' -f2)
+            echo "tunnel_url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+            echo "🌐 Найден сохранённый URL: $TUNNEL_URL"
+          else
+            # Fallback URLs (можно обновлять)
+            FALLBACK_URLS=(
+              "https://cynosure-bridge.ngrok-free.app"
+              "https://45c0-85-159-229-107.ngrok-free.app"
+            )
+            
+            for url in "${FALLBACK_URLS[@]}"; do
+              echo "🔍 Проверяем URL: $url"
+              if curl -f "$url/health" > /dev/null 2>&1; then
+                echo "tunnel_url=$url" >> $GITHUB_OUTPUT
+                echo "✅ Активный URL найден: $url"
+                break
+              fi
+            done
+          fi
+          
+      - name: Parse Task
+        id: task
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+          else
+            if [ "${{ github.event_name }}" == "issue_comment" ]; then
+              COMMENT="${{ github.event.comment.body }}"
+            else
+              COMMENT="${{ github.event.comment.body }}"
+            fi
+            TASK=$(echo "$COMMENT" | sed 's/.*@claude[[:space:]]*//' | head -1)
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "🎯 Задача: $TASK"
+          
+      - name: Check Factory Status
+        id: factory_status
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel_url }}"
+          
+          if [ -z "$TUNNEL_URL" ]; then
+            echo "❌ URL туннеля не найден"
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "message=Туннель недоступен. Убедитесь что Cynosure Factory запущена." >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "🔍 Проверяем статус фабрики: $TUNNEL_URL"
+          
+          # Проверяем health endpoint
+          if HEALTH_RESPONSE=$(curl -s "$TUNNEL_URL/health" 2>&1); then
+            echo "✅ Фабрика доступна"
+            echo "$HEALTH_RESPONSE" | jq '.' || echo "Health response: $HEALTH_RESPONSE"
+            echo "status=online" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Фабрика недоступна"
+            echo "status=offline" >> $GITHUB_OUTPUT
+            echo "message=Cynosure Factory не отвечает на $TUNNEL_URL" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Execute via Factory
+        id: execute
+        if: steps.factory_status.outputs.status == 'online'
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel_url }}"
+          TASK="${{ steps.task.outputs.task }}"
+          
+          echo "🤖 Отправляем запрос к Claude через фабрику..."
+          
+          # Формируем запрос к Claude
+          REQUEST_PAYLOAD=$(cat << EOF
+          {
+            "model": "gpt-4",
+            "messages": [
+              {
+                "role": "system",
+                "content": "Ты Claude, работающий через Cynosure Factory. Отвечай полезно и кратко на русском языке."
+              },
+              {
+                "role": "user",
+                "content": "$TASK"
+              }
+            ],
+            "max_tokens": 1500,
+            "temperature": 0.7
+          }
+          EOF
+          )
+          
+          # Отправляем запрос
+          RESPONSE=$(curl -s -X POST "$TUNNEL_URL/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer factory-bridge" \
+            -H "User-Agent: GitHub-Actions-Claude-Factory" \
+            -d "$REQUEST_PAYLOAD" 2>&1)
+          
+          echo "📝 Сырой ответ от фабрики:"
+          echo "$RESPONSE"
+          
+          # Извлекаем ответ Claude
+          if echo "$RESPONSE" | jq . > /dev/null 2>&1; then
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // .error.message // "Не удалось получить ответ"')
+            RESPONSE_STATUS="success"
+          else
+            CLAUDE_RESPONSE="Ошибка соединения с фабрикой. Проверьте логи сервера."
+            RESPONSE_STATUS="error"
+          fi
+          
+          # Сохраняем результат
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "status=$RESPONSE_STATUS" >> $GITHUB_OUTPUT
+          
+      - name: Handle Offline Factory
+        id: offline
+        if: steps.factory_status.outputs.status != 'online'
+        run: |
+          FACTORY_STATUS="${{ steps.factory_status.outputs.status }}"
+          FACTORY_MESSAGE="${{ steps.factory_status.outputs.message }}"
+          
+          OFFLINE_RESPONSE="🔴 **Cynosure Factory недоступна**
+          
+Статус: $FACTORY_STATUS
+Сообщение: $FACTORY_MESSAGE
+
+**Что нужно сделать:**
+1. Проверить что локальный сервер запущен
+2. Убедиться что ngrok туннель активен  
+3. Обновить URL в .github/TUNNEL_URL
+
+**Команды для запуска фабрики:**
+\`\`\`bash
+cd /Users/laptop/dev/cynosure
+./scripts/cynosure-factory.sh start
+\`\`\`"
+
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$OFFLINE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Post Response as Comment
+        if: github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const task = `${{ steps.task.outputs.task }}`;
+            const tunnelUrl = `${{ steps.tunnel.outputs.tunnel_url }}`;
+            const factoryStatus = `${{ steps.factory_status.outputs.status }}`;
+            
+            let response, statusEmoji;
+            
+            if (factoryStatus === 'online') {
+              response = `${{ steps.execute.outputs.response }}`;
+              const executeStatus = `${{ steps.execute.outputs.status }}`;
+              statusEmoji = executeStatus === 'success' ? '✅' : '⚠️';
+            } else {
+              response = `${{ steps.offline.outputs.response }}`;
+              statusEmoji = '🔴';
+            }
+            
+            const comment = `${statusEmoji} **Claude via Factory Bridge**
+
+**Задача:** ${task}
+
+**Ответ:**
+${response}
+
+---
+*🏭 Powered by Cynosure Factory*  
+*🌐 Tunnel: ${tunnelUrl || 'недоступен'}*  
+*🤖 Status: ${factoryStatus}*`;
+
+            const issueNumber = context.issue?.number || context.payload.pull_request?.number;
+            
+            if (issueNumber) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: comment
+              });
+            }
+            
+      - name: Create Summary
+        run: |
+          echo "## 🏭 Cynosure Factory Execution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Туннель URL:** ${{ steps.tunnel.outputs.tunnel_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Статус фабрики:** ${{ steps.factory_status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Задача:** ${{ steps.task.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.factory_status.outputs.status }}" = "online" ]; then
+            echo "**Ответ Claude:**" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.execute.outputs.response }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Проблема:**" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.factory_status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          fi

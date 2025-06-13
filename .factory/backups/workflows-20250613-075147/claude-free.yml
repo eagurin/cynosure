@@ -89,7 +89,7 @@ jobs:
           # List of known ngrok URLs (add yours here)
           BRIDGE_URLS=(
             "https://45c0-85-159-229-107.ngrok-free.app"
-            "https://45c0-85-159-229-107.ngrok-free.app"
+            "https://your-backup-url.ngrok-free.app"
           )
           
           TASK="${{ steps.task.outputs.task }}"

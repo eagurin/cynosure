@@ -1,0 +1,32 @@
+{
+  "tunnels": {
+    "primary": {
+      "name": "Cynosure Primary",
+      "type": "ngrok",
+      "target_port": 3000,
+      "subdomain": "cynosure-bridge",
+      "auth_token": "",
+      "region": "us",
+      "enabled": true
+    },
+    "backup": {
+      "name": "Cynosure Backup",
+      "type": "cloudflared",
+      "target_port": 3001,
+      "enabled": false
+    },
+    "alternative": {
+      "name": "LocalTunnel",
+      "type": "localtunnel",
+      "target_port": 3002,
+      "subdomain": "cynosure-alt",
+      "enabled": false
+    }
+  },
+  "strategy": {
+    "primary_tunnel": "primary",
+    "failover_enabled": true,
+    "auto_switch": true,
+    "health_check_interval": 30
+  }
+}

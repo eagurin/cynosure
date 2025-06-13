@@ -1,0 +1,259 @@
+name: Claude Local (Self-Hosted)
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Задача для Claude'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-local:
+    runs-on: self-hosted
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Parse Task
+        id: task
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+          else
+            if [ "${{ github.event_name }}" == "issue_comment" ]; then
+              COMMENT="${{ github.event.comment.body }}"
+            else
+              COMMENT="${{ github.event.comment.body }}"
+            fi
+            TASK=$(echo "$COMMENT" | sed 's/.*@claude[[:space:]]*//' | head -1)
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "🎯 Задача: $TASK"
+          
+      - name: Ensure Local Server Running
+        id: server
+        run: |
+          echo "🔍 Проверяем локальный Cynosure Bridge..."
+          
+          # Проверяем текущий статус
+          if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "✅ Сервер уже работает"
+            echo "status=online" >> $GITHUB_OUTPUT
+          else
+            echo "🚀 Запускаем локальный сервер..."
+            
+            # Запускаем через упрощённую фабрику
+            ./scripts/cynosure-local.sh start
+            
+            # Проверяем что запустился
+            sleep 3
+            if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Сервер успешно запущен"
+              echo "status=online" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Не удалось запустить сервер"
+              echo "status=error" >> $GITHUB_OUTPUT
+            fi
+          fi
+          
+          # Получаем информацию о сервере
+          if [ "$(echo "$status" | cut -d'=' -f2)" = "online" ]; then
+            HEALTH=$(curl -s http://localhost:3000/health)
+            echo "🔍 Статус сервера:"
+            echo "$HEALTH" | jq '.' || echo "Не удалось парсить health response"
+          fi
+          
+      - name: Execute Claude Request
+        id: execute
+        if: steps.server.outputs.status == 'online'
+        run: |
+          TASK="${{ steps.task.outputs.task }}"
+          
+          echo "🤖 Отправляем запрос к Claude через localhost..."
+          
+          # Формируем запрос
+          REQUEST_PAYLOAD=$(cat << EOF
+          {
+            "model": "gpt-4",
+            "messages": [
+              {
+                "role": "system",
+                "content": "Ты Claude, работающий через локальный Cynosure Bridge без внешних туннелей. Отвечай полезно и кратко на русском языке. Это прямое подключение localhost:3000 -> Claude CLI."
+              },
+              {
+                "role": "user",
+                "content": "$TASK"
+              }
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7
+          }
+          EOF
+          )
+          
+          # Отправляем запрос напрямую к localhost
+          RESPONSE=$(curl -s -X POST http://localhost:3000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer local-github-actions" \
+            -H "User-Agent: GitHub-Actions-Self-Hosted" \
+            -d "$REQUEST_PAYLOAD" 2>&1)
+          
+          echo "📝 Сырой ответ от локального сервера:"
+          echo "$RESPONSE"
+          
+          # Извлекаем ответ Claude
+          if echo "$RESPONSE" | jq . > /dev/null 2>&1; then
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // .error.message // "Не удалось получить ответ"')
+            RESPONSE_STATUS="success"
+            
+            # Получаем дополнительную информацию
+            MODEL_USED=$(echo "$RESPONSE" | jq -r '.model // "unknown"')
+            TOKENS_USED=$(echo "$RESPONSE" | jq -r '.usage.total_tokens // "unknown"')
+            
+            echo "model_used=$MODEL_USED" >> $GITHUB_OUTPUT
+            echo "tokens_used=$TOKENS_USED" >> $GITHUB_OUTPUT
+          else
+            CLAUDE_RESPONSE="Ошибка соединения с локальным сервером. Ответ: $RESPONSE"
+            RESPONSE_STATUS="error"
+          fi
+          
+          # Сохраняем результат
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "status=$RESPONSE_STATUS" >> $GITHUB_OUTPUT
+          
+      - name: Handle Server Error
+        id: error
+        if: steps.server.outputs.status != 'online'
+        run: |
+          ERROR_RESPONSE="🔴 **Локальный Cynosure Bridge недоступен**
+          
+**Статус**: Сервер не отвечает на localhost:3000
+
+**Возможные причины:**
+1. Процесс не запущен
+2. Порт 3000 занят другим процессом  
+3. Ошибка в конфигурации Claude CLI
+
+**Команды для диагностики:**
+\`\`\`bash
+# Проверить статус
+./scripts/cynosure-local.sh status
+
+# Посмотреть логи
+./scripts/cynosure-local.sh logs
+
+# Перезапустить сервер
+./scripts/cynosure-local.sh restart
+
+# Проверить порт
+lsof -i:3000
+\`\`\`
+
+**Преимущества локального подключения:**
+- ✅ Нет зависимости от внешних туннелей
+- ✅ Прямое подключение: GitHub Actions → localhost:3000 → Claude CLI
+- ✅ Быстрее выполнение (нет задержки ngrok)
+- ✅ Безопаснее (нет внешнего доступа)"
+
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$ERROR_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Post Response as Comment
+        if: github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const task = `${{ steps.task.outputs.task }}`;
+            const serverStatus = `${{ steps.server.outputs.status }}`;
+            
+            let response, statusEmoji, additionalInfo = '';
+            
+            if (serverStatus === 'online') {
+              response = `${{ steps.execute.outputs.response }}`;
+              const executeStatus = `${{ steps.execute.outputs.status }}`;
+              statusEmoji = executeStatus === 'success' ? '✅' : '⚠️';
+              
+              if (executeStatus === 'success') {
+                const modelUsed = `${{ steps.execute.outputs.model_used }}`;
+                const tokensUsed = `${{ steps.execute.outputs.tokens_used }}`;
+                additionalInfo = `\n*🤖 Model: ${modelUsed} | 🔢 Tokens: ${tokensUsed}*`;
+              }
+            } else {
+              response = `${{ steps.error.outputs.response }}`;
+              statusEmoji = '🔴';
+            }
+            
+            const comment = `${statusEmoji} **Claude via Local Bridge**
+
+**Задача:** ${task}
+
+**Ответ:**
+${response}
+
+---
+*🏠 Локальное подключение: localhost:3000*  
+*📡 Self-hosted runner*  
+*⚡ Без внешних туннелей*${additionalInfo}`;
+
+            const issueNumber = context.issue?.number || context.payload.pull_request?.number;
+            
+            if (issueNumber) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: comment
+              });
+            }
+            
+      - name: Create Summary
+        run: |
+          echo "## 🏠 Локальное выполнение Claude" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Сервер**: localhost:3000" >> $GITHUB_STEP_SUMMARY
+          echo "**Статус**: ${{ steps.server.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Задача**: ${{ steps.task.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.server.outputs.status }}" = "online" ]; then
+            echo "**Ответ Claude:**" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.execute.outputs.response }}" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ steps.execute.outputs.status }}" = "success" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 📊 Детали выполнения" >> $GITHUB_STEP_SUMMARY
+              echo "- **Модель**: ${{ steps.execute.outputs.model_used }}" >> $GITHUB_STEP_SUMMARY
+              echo "- **Токены**: ${{ steps.execute.outputs.tokens_used }}" >> $GITHUB_STEP_SUMMARY
+              echo "- **Подключение**: Прямое (без туннелей)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### ✅ Преимущества локального подключения:" >> $GITHUB_STEP_SUMMARY
+              echo "- Прямой доступ к localhost:3000" >> $GITHUB_STEP_SUMMARY
+              echo "- Нет зависимости от ngrok туннелей" >> $GITHUB_STEP_SUMMARY
+              echo "- Быстрее выполнение (нет задержки туннеля)" >> $GITHUB_STEP_SUMMARY
+              echo "- Более надёжно (нет changeable URLs)" >> $GITHUB_STEP_SUMMARY
+              echo "- Безопаснее (нет внешнего доступа)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "**Проблема**: ${{ steps.server.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Используйте \`./scripts/cynosure-local.sh status\` для диагностики" >> $GITHUB_STEP_SUMMARY
+          fi

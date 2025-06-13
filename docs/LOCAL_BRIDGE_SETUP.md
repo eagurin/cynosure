@@ -51,11 +51,13 @@ curl -X POST https://your-ngrok-url.ngrok-free.app/v1/test \
 ### Issue Comments
 
 Format:
+
 ```
 @claude-local https://your-ngrok-url.ngrok-free.app Your question here
 ```
 
 Example:
+
 ```
 @claude-local https://45c0-85-159-229-107.ngrok-free.app Tell me about Cynosure Bridge
 ```

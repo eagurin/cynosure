@@ -172,5 +172,10 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start the server
-start();
+// Export build function for testing
+export { createServer as build };
+
+// Start the server when run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  start();
+}

@@ -10,7 +10,7 @@ import {
   OpenAIChatCompletionChunk,
 } from '../models/openai.js';
 import { ClaudeApiClient } from '../claude/api-client.js';
-import { formatSSE, createOpenAIError, sanitizeModelName } from '../utils/helpers.js';
+import { formatSSE, createOpenAIError, sanitizeModelName, mapModelToClaud, EMBEDDING_MODELS } from '../utils/helpers.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check endpoint
@@ -41,35 +41,63 @@ export async function registerRoutes(fastify: FastifyInstance) {
     return {
       object: 'list',
       data: [
+        // Chat models (mapped to Claude)
         {
           id: 'gpt-4',
           object: 'model',
           created: 1686935002,
           owned_by: 'cynosure',
+          description: 'Maps to claude-3-5-sonnet-20241022',
         },
         {
           id: 'gpt-4-turbo',
-          object: 'model',
+          object: 'model', 
           created: 1686935002,
           owned_by: 'cynosure',
+          description: 'Maps to claude-3-5-sonnet-20241022',
         },
         {
           id: 'gpt-3.5-turbo',
           object: 'model',
           created: 1686935002,
           owned_by: 'cynosure',
+          description: 'Maps to claude-3-5-haiku-20241022',
         },
         {
           id: 'gpt-4o',
           object: 'model',
           created: 1686935002,
           owned_by: 'cynosure',
+          description: 'Maps to claude-3-5-sonnet-20241022',
         },
         {
           id: 'gpt-4o-mini',
           object: 'model',
           created: 1686935002,
           owned_by: 'cynosure',
+          description: 'Maps to claude-3-5-haiku-20241022',
+        },
+        // Embedding models (synthetic)
+        {
+          id: 'text-embedding-3-small',
+          object: 'model',
+          created: 1686935002,
+          owned_by: 'cynosure',
+          description: 'Synthetic embeddings (1536 dimensions)',
+        },
+        {
+          id: 'text-embedding-3-large',
+          object: 'model',
+          created: 1686935002,
+          owned_by: 'cynosure',
+          description: 'Synthetic embeddings (3072 dimensions)',
+        },
+        {
+          id: 'text-embedding-ada-002',
+          object: 'model',
+          created: 1686935002,
+          owned_by: 'cynosure',
+          description: 'Synthetic embeddings (1536 dimensions)',
         },
       ],
     };
@@ -128,13 +156,14 @@ export async function registerRoutes(fastify: FastifyInstance) {
           return createOpenAIError('Missing required fields: model and messages');
         }
 
-        // Sanitize model name
+        // Sanitize and map model name
         const sanitizedModel = sanitizeModelName(body.model);
+        const claudeModel = mapModelToClaud(sanitizedModel);
 
         // Get Claude Code config from environment
         const claudeConfig = {
           apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-cli',
-          model: sanitizedModel,
+          model: claudeModel,
           workingDirectory: process.env.WORKING_DIRECTORY || process.cwd(),
           maxTurns: parseInt(process.env.MAX_TURNS || '5'),
           timeout: parseInt(process.env.TIMEOUT || '300000'), // 5 minutes
@@ -171,8 +200,69 @@ export async function registerRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Embeddings endpoint (synthetic implementation)
+  fastify.post('/v1/embeddings', async (request: FastifyRequest<{ Body: any }>, reply: FastifyReply) => {
+    try {
+      const { input, model = 'text-embedding-3-small' } = request.body as any;
+      
+      if (!input) {
+        reply.code(400);
+        return createOpenAIError('Missing required field: input');
+      }
+
+      // Get dimensions from configuration
+      const dimensions = EMBEDDING_MODELS[model] || 1536;
+      
+      // Generate synthetic embeddings (deterministic hash-based)
+      const texts = Array.isArray(input) ? input : [input];
+      const embeddings = texts.map((text: string, index: number) => {
+        // Simple hash-based synthetic embedding
+        const vector = new Array(dimensions).fill(0).map((_, i) => {
+          const hash = simpleHash(text + i.toString());
+          return (hash % 2000 - 1000) / 1000; // Normalize to [-1, 1]
+        });
+        
+        return {
+          object: 'embedding',
+          embedding: vector,
+          index: index,
+        };
+      });
+
+      return {
+        object: 'list',
+        data: embeddings,
+        model: model,
+        usage: {
+          prompt_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
+          total_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
+        },
+      };
+    } catch (error) {
+      fastify.log.error('Error in embeddings:', error);
+      reply.code(500);
+      return createOpenAIError(
+        error instanceof Error ? error.message : 'Internal server error',
+        'internal_error'
+      );
+    }
+  });
+
+  // Metrics endpoint for monitoring
+  fastify.get('/metrics', async (_request, _reply) => {
+    return {
+      service: 'cynosure-bridge',
+      version: process.env.npm_package_version || '1.0.0',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      requests_total: 'N/A', // TODO: implement proper metrics
+      errors_total: 'N/A',
+      timestamp: new Date().toISOString(),
+    };
+  });
+
   // Legacy completions endpoint (for compatibility)
-  fastify.post('/v1/completions', async (request, reply) => {
+  fastify.post('/v1/completions', async (_request, reply) => {
     reply.code(400);
     return createOpenAIError(
       'Legacy completions endpoint not supported. Use /v1/chat/completions instead.',
@@ -247,4 +337,15 @@ async function handleStreamingRequest(
   }
 
   reply.raw.end();
+}
+
+// Simple hash function for deterministic embeddings
+function simpleHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
 }
