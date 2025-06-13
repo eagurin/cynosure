@@ -1,0 +1,139 @@
+name: Claude Bridge First (No API Key)
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for Claude'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-bridge:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Parse Task
+        id: task
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+          else
+            COMMENT="${{ github.event.comment.body }}"
+            TASK=$(echo "$COMMENT" | sed 's/.*@claude //' | head -1)
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "🎯 Task: $TASK"
+          
+      - name: Try Local Claude Bridge FIRST
+        id: claude_bridge
+        run: |
+          echo "🌐 Connecting to Local Claude Bridge..."
+          
+          # Your ngrok URL here
+          BRIDGE_URL="https://45c0-85-159-229-107.ngrok-free.app"
+          TASK="${{ steps.task.outputs.task }}"
+          
+          # Check if bridge is alive
+          echo "Checking bridge health..."
+          if curl -f "$BRIDGE_URL/health" 2>&1 | jq '.claude_code_available'; then
+            echo "✅ Claude Bridge is ONLINE!"
+            
+            # Send request to Claude via bridge
+            echo "Sending request to Claude..."
+            RESPONSE=$(curl -s -X POST "$BRIDGE_URL/v1/chat/completions" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer local-max" \
+              -d "{
+                \"model\": \"gpt-4\",
+                \"messages\": [
+                  {
+                    \"role\": \"user\",
+                    \"content\": \"$TASK\"
+                  }
+                ],
+                \"max_tokens\": 1000,
+                \"temperature\": 0.7
+              }" 2>&1)
+            
+            echo "Raw response: $RESPONSE"
+            
+            # Extract Claude's response
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // .error.message // empty' 2>/dev/null)
+            
+            if [ ! -z "$CLAUDE_RESPONSE" ]; then
+              echo "✅ Got response from Claude!"
+              STATUS="success"
+            else
+              echo "⚠️ No valid response from Claude"
+              CLAUDE_RESPONSE="Claude не смог обработать запрос. Проверьте локальный сервер."
+              STATUS="partial"
+            fi
+          else
+            echo "❌ Claude Bridge is OFFLINE!"
+            CLAUDE_RESPONSE="Локальный мост с Claude недоступен. Убедитесь что:\n1. Cynosure Bridge запущен локально\n2. Ngrok туннель активен\n3. URL правильный: $BRIDGE_URL"
+            STATUS="error"
+          fi
+          
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          
+      - name: Post Claude Response
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = `${{ steps.claude_bridge.outputs.response }}`;
+            const status = `${{ steps.claude_bridge.outputs.status }}`;
+            const task = `${{ steps.task.outputs.task }}`;
+            
+            let statusEmoji = '✅';
+            if (status === 'error') statusEmoji = '❌';
+            else if (status === 'partial') statusEmoji = '⚠️';
+            
+            const comment = `${statusEmoji} **Claude via Local Bridge**
+
+**Task:** ${task}
+
+**Response:**
+${response}
+
+---
+*🌐 Using Local Cynosure Bridge*  
+*🧠 Powered by Claude MAX subscription*  
+*🔓 No API key required*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            
+      - name: Summary
+        run: |
+          echo "## Claude Bridge Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.claude_bridge.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Task:** ${{ steps.task.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Claude Response:**" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.claude_bridge.outputs.response }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Bridge URL:** https://45c0-85-159-229-107.ngrok-free.app" >> $GITHUB_STEP_SUMMARY
