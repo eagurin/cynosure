@@ -1,0 +1,37 @@
+{
+  "proxy": {
+    "enabled": true,
+    "port": 3000,
+    "host": "localhost",
+    "openai_compatibility": true
+  },
+  "claude_max": {
+    "subscription": true,
+    "bypass_api_key": true,
+    "local_executable": true
+  },
+  "api_mapping": {
+    "base_url": "http://localhost:3000",
+    "endpoints": {
+      "chat_completions": "/v1/chat/completions",
+      "models": "/v1/models",
+      "health": "/health"
+    }
+  },
+  "model_mappings": {
+    "gpt-4": "claude-3-opus-20240229",
+    "gpt-4-turbo": "claude-3-5-sonnet-20241022", 
+    "gpt-3.5-turbo": "claude-3-haiku-20240307",
+    "gpt-4o": "claude-3-5-sonnet-20241022",
+    "gpt-4o-mini": "claude-3-haiku-20240307"
+  },
+  "github_action": {
+    "official_action": "anthropics/claude-code-action@beta",
+    "proxy_integration": true,
+    "environment_variables": [
+      "OPENAI_API_BASE",
+      "OPENAI_BASE_URL", 
+      "CYNOSURE_PROXY_URL"
+    ]
+  }
+}

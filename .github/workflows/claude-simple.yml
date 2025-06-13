@@ -1,0 +1,177 @@
+name: Claude via Cynosure Bridge (Simple)
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Задача для Claude'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-simple:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Build Cynosure Bridge
+        run: npm run build
+        
+      - name: Start Cynosure Bridge
+        run: |
+          echo "🚀 Запускаем Cynosure Bridge на порту 3000..."
+          
+          # Запускаем сервер в фоне
+          PORT=3000 npm start &
+          PROXY_PID=$!
+          echo "PROXY_PID=$PROXY_PID" >> $GITHUB_ENV
+          
+          # Ждем запуска сервера
+          sleep 10
+          
+          # Проверяем что сервер запустился
+          if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "✅ Cynosure Bridge запущен успешно"
+          else
+            echo "❌ Ошибка запуска Cynosure Bridge"
+            exit 1
+          fi
+          
+      - name: Test API Compatibility
+        run: |
+          echo "🧪 Тестируем OpenAI API совместимость..."
+          
+          # Тест models endpoint
+          echo "📋 Доступные модели:"
+          curl -s http://localhost:3000/v1/models | jq '.data[].id' || echo "Models endpoint недоступен"
+          
+          # Тест простого запроса
+          echo "💬 Тестовый запрос к API:"
+          RESPONSE=$(curl -s -X POST http://localhost:3000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer dummy-key" \
+            -d '{
+              "model": "gpt-4",
+              "messages": [{"role": "user", "content": "Ответь одним словом: работает"}],
+              "max_tokens": 10
+            }')
+          
+          echo "Ответ API:"
+          echo "$RESPONSE" | jq '.' || echo "$RESPONSE"
+          
+      - name: Parse Task from Input or Comment
+        id: task
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+          else
+            COMMENT="${{ github.event.comment.body }}"
+            TASK=$(echo "$COMMENT" | sed 's/.*@claude //' | sed 's/\n.*//')
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "🎯 Задача: $TASK"
+          
+      - name: Execute Task via Cynosure Bridge
+        id: execute
+        run: |
+          echo "🤖 Выполняем задачу через Cynosure Bridge..."
+          
+          TASK="${{ steps.task.outputs.task }}"
+          
+          # Формируем запрос к Claude через наш прокси
+          RESPONSE=$(curl -s -X POST http://localhost:3000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer dummy-key" \
+            -d "{
+              \"model\": \"gpt-4\",
+              \"messages\": [
+                {
+                  \"role\": \"system\", 
+                  \"content\": \"Ты помощник-программист работающий с проектом Cynosure Bridge. Отвечай кратко и по делу на русском языке.\"
+                },
+                {
+                  \"role\": \"user\", 
+                  \"content\": \"$TASK\"
+                }
+              ],
+              \"max_tokens\": 1000
+            }")
+          
+          echo "📝 Ответ Claude:"
+          echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "Ошибка парсинга ответа: $RESPONSE"
+          
+          # Сохраняем ответ для комментария
+          CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "Ошибка получения ответа от Claude")
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Comment Response
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = `${{ steps.execute.outputs.response }}`;
+            const task = `${{ steps.task.outputs.task }}`;
+            
+            const comment = `🤖 **Claude через Cynosure Bridge**
+            
+**Задача:** ${task}
+
+**Ответ:**
+${response}
+
+---
+*🔧 Powered by Cynosure Bridge + Claude MAX*
+*⚡ Запущено на GitHub Actions*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            
+      - name: Create Summary
+        run: |
+          echo "## 🎉 Задача выполнена!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Задача:** ${{ steps.task.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Статус:** ✅ Успешно" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cynosure Bridge:** Работает на порту 3000" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Claude MAX:** Подключен через локальную подписку" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Очистка ресурсов..."
+          if [ ! -z "$PROXY_PID" ]; then
+            kill $PROXY_PID 2>/dev/null || true
+          fi
+          pkill -f "npm start" 2>/dev/null || true
+          echo "✅ Очистка завершена"

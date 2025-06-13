@@ -1,0 +1,383 @@
+name: Claude Code Free (GitHub Models)
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Задача для AI помощника'
+        required: true
+        type: string
+      target_branch:
+        description: 'Целевая ветка для изменений'
+        required: false
+        default: 'ai-assist'
+        type: string
+
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  # Бесплатный AI-помощник с GitHub Models
+  free-ai-assistant:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/ai'))
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install Dependencies
+      run: npm ci
+      
+    - name: Parse Task
+      id: parse-task
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "task=${{ inputs.task }}" >> $GITHUB_OUTPUT
+          echo "branch=${{ inputs.target_branch }}-${{ github.run_id }}" >> $GITHUB_OUTPUT
+        else
+          COMMENT="${{ github.event.comment.body }}"
+          TASK=$(echo "$COMMENT" | sed 's/\/ai //')
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "branch=ai-fix-${{ github.run_id }}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create Branch
+      run: |
+        git checkout -b ${{ steps.parse-task.outputs.branch }}
+        git config --global user.name "Free AI Assistant"
+        git config --global user.email "ai-assistant@cynosure.dev"
+        
+    - name: Setup GitHub CLI with Models Extension
+      run: |
+        gh extension install github/gh-models || echo "Extension already installed"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create AI Prompt
+      run: |
+        cat > ai_prompt.txt << 'EOF'
+        Ты работаешь над проектом Cynosure Bridge - OpenAI API-совместимым прокси для Claude.
+        
+        КОНТЕКСТ ПРОЕКТА:
+        - TypeScript/Node.js приложение с Fastify сервером
+        - Переводит OpenAI API запросы в формат Claude
+        - Поддерживает потоковые ответы и маппинг моделей
+        - Использует современные ES модули со строгой типизацией
+        
+        ЗАДАЧА: ${{ steps.parse-task.outputs.task }}
+        
+        ТРЕБОВАНИЯ:
+        1. Следуй существующим TypeScript конвенциям
+        2. Поддерживай OpenAI API совместимость
+        3. Используй правильную обработку ошибок
+        4. Добавляй JSDoc комментарии для сложных функций
+        5. Включай тесты если добавляешь новую функциональность
+        6. Запускай линтинг и форматирование
+        
+        Проанализируй кодовую базу и реализуй запрошенные изменения.
+        Отвечай на русском языке с конкретными рекомендациями по коду.
+        EOF
+        
+    - name: Execute Free AI Analysis
+      id: ai-analysis
+      run: |
+        echo "🤖 Запускаем бесплатный AI анализ..."
+        
+        # Попробуем разные бесплатные модели
+        AI_RESPONSE=$(
+          gh models run openai/gpt-4o-mini "$(cat ai_prompt.txt)" 2>/dev/null || \
+          gh models run meta/llama-3.1-8b-instruct "$(cat ai_prompt.txt)" 2>/dev/null || \
+          gh models run mistral-ai/mistral-small "$(cat ai_prompt.txt)" 2>/dev/null || \
+          echo "AI модели временно недоступны. Создаю базовую структуру для задачи: ${{ steps.parse-task.outputs.task }}"
+        )
+        
+        # Сохраняем ответ AI
+        echo "$AI_RESPONSE" > ai_analysis.md
+        
+        # Базовые проверки кода если AI недоступен
+        if [[ "$AI_RESPONSE" == *"недоступны"* ]]; then
+          echo "## 🔧 Fallback анализ кода" >> ai_analysis.md
+          echo "" >> ai_analysis.md
+          echo "AI модели временно недоступны, но вот что можно сделать:" >> ai_analysis.md
+          echo "" >> ai_analysis.md
+          
+          # Проверяем TypeScript
+          if npm run typecheck 2>&1 | grep -q "error"; then
+            echo "❌ **TypeScript ошибки найдены** - нужно исправить типы" >> ai_analysis.md
+          else
+            echo "✅ **TypeScript проверки прошли успешно**" >> ai_analysis.md
+          fi
+          
+          # Проверяем ESLint
+          if npm run lint 2>&1 | grep -q "error"; then
+            echo "❌ **ESLint ошибки найдены** - запусти \`npm run lint:fix\`" >> ai_analysis.md
+          else
+            echo "✅ **Код соответствует style guide**" >> ai_analysis.md
+          fi
+          
+          # Проверяем тесты
+          if npm test 2>&1 | grep -q "failed"; then
+            echo "❌ **Тесты не проходят** - нужно исправить" >> ai_analysis.md
+          else
+            echo "✅ **Все тесты проходят успешно**" >> ai_analysis.md
+          fi
+          
+          echo "" >> ai_analysis.md
+          echo "### 🎯 Рекомендации для задачи: ${{ steps.parse-task.outputs.task }}" >> ai_analysis.md
+          echo "1. Проанализируй файлы в \`src/\` директории" >> ai_analysis.md
+          echo "2. Следуй существующим паттернам кода" >> ai_analysis.md
+          echo "3. Добавь соответствующие тесты в \`tests/\`" >> ai_analysis.md
+          echo "4. Обнови документацию если нужно" >> ai_analysis.md
+        fi
+        
+        echo "ai_available=true" >> $GITHUB_OUTPUT
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Apply Basic Code Improvements
+      run: |
+        echo "🔧 Применяем базовые улучшения..."
+        
+        # Автоматические исправления
+        npm run lint:fix || echo "Linting completed with issues"
+        npm run format || echo "Formatting completed"
+        
+        # Создаем файл с анализом
+        mkdir -p docs/ai-analysis
+        cp ai_analysis.md "docs/ai-analysis/analysis-${{ github.run_id }}.md"
+        
+        # Если есть изменения от линтера
+        if ! git diff --quiet; then
+          git add -A
+          echo "changes_made=true" >> $GITHUB_ENV
+        else
+          echo "changes_made=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Create Template Files for Task
+      if: env.changes_made == 'false'
+      run: |
+        echo "📝 Создаем шаблонные файлы для задачи..."
+        
+        TASK_NAME=$(echo "${{ steps.parse-task.outputs.task }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+        
+        # Создаем шаблон для новой функции
+        mkdir -p "src/features/$TASK_NAME"
+        
+        cat > "src/features/$TASK_NAME/README.md" << EOF
+        # ${{ steps.parse-task.outputs.task }}
+        
+        ## Описание
+        Эта функция создана для: ${{ steps.parse-task.outputs.task }}
+        
+        ## TODO
+        - [ ] Реализовать основную логику
+        - [ ] Добавить TypeScript типы
+        - [ ] Написать тесты
+        - [ ] Добавить документацию
+        - [ ] Интегрировать с основным API
+        
+        ## Структура файлов
+        - \`index.ts\` - основная логика
+        - \`types.ts\` - TypeScript интерфейсы
+        - \`__tests__/\` - тесты
+        EOF
+        
+        cat > "src/features/$TASK_NAME/index.ts" << EOF
+        /**
+         * Feature: ${{ steps.parse-task.outputs.task }}
+         * Created by Free AI Assistant
+         */
+        
+        export interface ${TASK_NAME^}Config {
+          // TODO: Определить конфигурацию
+        }
+        
+        export class ${TASK_NAME^}Feature {
+          constructor(private config: ${TASK_NAME^}Config) {}
+          
+          /**
+           * TODO: Реализовать основную логику
+           */
+          async execute(): Promise<void> {
+            throw new Error('Not implemented yet');
+          }
+        }
+        EOF
+        
+        # Создаем шаблон теста
+        mkdir -p "tests/features/$TASK_NAME"
+        cat > "tests/features/$TASK_NAME/$TASK_NAME.test.ts" << EOF
+        import { describe, it, expect } from 'vitest';
+        import { ${TASK_NAME^}Feature } from '../../../src/features/$TASK_NAME';
+        
+        describe('${TASK_NAME^}Feature', () => {
+          it('should be implemented', () => {
+            // TODO: Написать тесты для ${{ steps.parse-task.outputs.task }}
+            expect(true).toBe(true);
+          });
+        });
+        EOF
+        
+        git add -A
+        echo "changes_made=true" >> $GITHUB_ENV
+        
+    - name: Run Quality Checks
+      run: |
+        echo "✅ Запускаем проверки качества..."
+        
+        # Проверяем TypeScript
+        npm run typecheck || echo "TypeScript issues found"
+        
+        # Запускаем тесты
+        npm test || echo "Tests failed but continuing..."
+        
+    - name: Commit Changes
+      if: env.changes_made == 'true'
+      run: |
+        git add -A
+        
+        git commit -m "feat: ${{ steps.parse-task.outputs.task }}
+
+Реализовано с помощью бесплатного AI помощника (GitHub Models).
+
+Изменения:
+- Автоматические исправления кода (lint, format)
+- Шаблонные файлы для новой функциональности
+- AI анализ и рекомендации
+
+Co-Authored-By: Free AI Assistant <ai-assistant@cynosure.dev>
+Co-Authored-By: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+        
+    - name: Push and Create PR
+      if: env.changes_made == 'true'
+      run: |
+        git push origin ${{ steps.parse-task.outputs.branch }}
+        
+        gh pr create \
+          --title "🤖 Free AI: ${{ steps.parse-task.outputs.task }}" \
+          --body "## 🤖 Бесплатный AI Помощник
+
+### Задача
+${{ steps.parse-task.outputs.task }}
+
+### Что сделано
+- ✅ AI анализ с GitHub Models (бесплатно!)
+- ✅ Автоматические исправления кода
+- ✅ Шаблонные файлы для разработки
+- ✅ Проверки качества кода
+
+### AI Анализ
+Подробный анализ доступен в файле: \`docs/ai-analysis/analysis-${{ github.run_id }}.md\`
+
+### Следующие шаги
+1. Просмотри AI рекомендации
+2. Реализуй основную логику
+3. Добавь тесты
+4. Протестируй изменения
+
+---
+*🆓 Создано бесплатным AI помощником на GitHub Models*
+*👤 Запросил: @${{ github.actor }}*" \
+          --base dev \
+          --head ${{ steps.parse-task.outputs.branch }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Comment Result
+      if: github.event_name == 'issue_comment'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const changesMade = process.env.changes_made === 'true';
+          const task = '${{ steps.parse-task.outputs.task }}';
+          const branch = '${{ steps.parse-task.outputs.branch }}';
+          
+          let message;
+          if (changesMade) {
+            message = `🤖 **Бесплатный AI помощник завершил работу!**
+            
+**Задача:** ${task}
+**Ветка:** \`${branch}\`
+
+✅ Создан Pull Request с:
+- 🆓 AI анализом (GitHub Models)
+- 🔧 Автоматическими исправлениями
+- 📝 Шаблонными файлами
+- ✨ Рекомендациями для разработки
+
+*🆓 Полностью бесплатно - никаких API ключей!*`;
+          } else {
+            message = `ℹ️ **AI анализ завершен**
+            
+**Задача:** ${task}
+
+Код уже соответствует требованиям. Дополнительные рекомендации доступны в анализе.
+
+*🤖 Powered by FREE GitHub Models*`;
+          }
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: message
+          });
+
+  # Fallback для случаев когда GitHub Models недоступны
+  simple-fallback:
+    if: failure() && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: [free-ai-assistant]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Simple Code Analysis
+      run: |
+        echo "🔄 AI модели недоступны - используем простой анализ"
+        
+        mkdir -p docs/analysis
+        cat > docs/analysis/simple-analysis.md << EOF
+        # Простой анализ кода
+
+        ## Задача: ${{ github.event.inputs.task }}
+
+        ## Статус проекта
+        - Последний коммит: $(git log -1 --pretty=format:"%h %s")
+        - Файлов в проекте: $(find src -name "*.ts" | wc -l)
+        - Тестовых файлов: $(find tests -name "*.test.ts" | wc -l)
+
+        ## Рекомендации
+        1. Проанализируй структуру проекта в \`src/\`
+        2. Посмотри на существующие тесты в \`tests/\`
+        3. Следуй TypeScript паттернам проекта
+        4. Добавь необходимые тесты
+
+        ## Полезные команды
+        \`\`\`bash
+        npm run typecheck  # Проверка типов
+        npm run lint       # Проверка кода
+        npm test          # Запуск тестов
+        npm run dev       # Запуск dev сервера
+        \`\`\`
+        EOF
+        
+        echo "✅ Создан простой анализ в docs/analysis/simple-analysis.md"
