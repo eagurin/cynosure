@@ -14,6 +14,7 @@ GitHub Models provides free access to AI models directly through GitHub. This gu
 ## 📋 Available Models (as of 2025)
 
 GitHub Models typically includes:
+
 - OpenAI GPT models
 - Anthropic Claude models
 - Google Gemini

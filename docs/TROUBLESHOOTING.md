@@ -5,11 +5,13 @@
 ### Installation Issues
 
 #### Claude Code CLI Not Found
+
 ```bash
 Error: Claude CLI not found at /Users/laptop/.claude/local/claude
 ```
 
 **Solution:**
+
 ```bash
 # Install Claude Code CLI globally
 npm install -g @anthropic-ai/claude-code
@@ -22,11 +24,13 @@ which claude
 ```
 
 #### Dependencies Installation Failed
+
 ```bash
 npm ERR! peer dep missing
 ```
 
 **Solution:**
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -39,11 +43,13 @@ npm install
 ### Runtime Issues
 
 #### Port Already in Use
+
 ```bash
 Error: listen EADDRINUSE: address already in use :::3000
 ```
 
 **Solutions:**
+
 ```bash
 # Option 1: Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
@@ -57,17 +63,20 @@ kill -9 <process-id>
 ```
 
 #### Invalid API Key Error
+
 ```bash
 Invalid API key · Fix external API key
 ```
 
 **Solutions:**
+
 1. **For Claude MAX subscription** (expected behavior):
    - This error is normal when using Claude MAX
    - The API will still return responses
    - No action needed
 
 2. **For API key users**:
+
    ```bash
    # Set your API key
    export ANTHROPIC_API_KEY="sk-ant-your-key-here"
@@ -77,11 +86,13 @@ Invalid API key · Fix external API key
    ```
 
 #### TypeScript Compilation Errors
+
 ```bash
 src/index.ts(1,24): error TS2307: Cannot find module
 ```
 
 **Solutions:**
+
 ```bash
 # Check TypeScript configuration
 npm run typecheck
@@ -97,17 +108,21 @@ import { helper } from './utils/helpers.js';
 ### API Issues
 
 #### 404 Not Found
+
 ```bash
 curl: (22) The requested URL returned error: 404 Not Found
 ```
 
 **Solutions:**
+
 1. **Check server is running:**
+
    ```bash
    curl http://localhost:3000/health
    ```
 
 2. **Verify endpoint URL:**
+
    ```bash
    # Correct endpoints
    POST /v1/chat/completions
@@ -116,18 +131,22 @@ curl: (22) The requested URL returned error: 404 Not Found
    ```
 
 3. **Check content-type:**
+
    ```bash
    curl -H "Content-Type: application/json" \
         -X POST http://localhost:3000/v1/chat/completions
    ```
 
 #### Streaming Not Working
+
 ```bash
 # No streaming data received
 ```
 
 **Solutions:**
+
 1. **Check stream parameter:**
+
    ```json
    {
      "model": "gpt-4",
@@ -137,6 +156,7 @@ curl: (22) The requested URL returned error: 404 Not Found
    ```
 
 2. **Test with curl:**
+
    ```bash
    curl -X POST http://localhost:3000/v1/chat/completions \
         -H "Content-Type: application/json" \
@@ -150,7 +170,9 @@ curl: (22) The requested URL returned error: 404 Not Found
 ### Performance Issues
 
 #### Slow Response Times
+
 **Diagnostics:**
+
 ```bash
 # Check system resources
 top
@@ -164,13 +186,16 @@ npm run dev | grep "duration"
 ```
 
 **Solutions:**
+
 1. **Implement caching** (Redis)
 2. **Optimize prompts** (reduce token count)
 3. **Use appropriate models** (Haiku for speed)
 4. **Check network connectivity**
 
 #### Memory Leaks
+
 **Diagnostics:**
+
 ```bash
 # Monitor memory usage
 ps aux | grep node
@@ -180,6 +205,7 @@ node --inspect src/index.js
 ```
 
 **Solutions:**
+
 1. **Profile with Node.js inspector**
 2. **Check for unclosed streams**
 3. **Implement proper cleanup**
@@ -188,11 +214,13 @@ node --inspect src/index.js
 ### Development Issues
 
 #### Hot Reload Not Working
+
 ```bash
 # Changes not reflected
 ```
 
 **Solutions:**
+
 ```bash
 # Check tsx watch mode
 npm run dev
@@ -206,11 +234,13 @@ ls -la src/
 ```
 
 #### Tests Failing
+
 ```bash
 # Test failures
 ```
 
 **Solutions:**
+
 ```bash
 # Run specific test
 npm run test -- helpers.test.ts
@@ -226,11 +256,13 @@ npm run test -- --update-snapshots
 ```
 
 #### Linting Errors
+
 ```bash
 # ESLint errors
 ```
 
 **Solutions:**
+
 ```bash
 # Auto-fix issues
 npm run lint:fix
@@ -245,11 +277,13 @@ npx eslint src/server/routes.ts
 ## Docker Issues
 
 ### Docker Build Failures
+
 ```bash
 # Build failures
 ```
 
 **Solutions:**
+
 ```bash
 # Clean Docker cache
 docker system prune -a
@@ -262,11 +296,13 @@ docker build --dry-run .
 ```
 
 ### Container Not Starting
+
 ```bash
 # Container exits immediately
 ```
 
 **Solutions:**
+
 ```bash
 # Check logs
 docker logs cynosure
@@ -281,6 +317,7 @@ docker run cynosure env
 ## Debugging Tips
 
 ### Enable Debug Logging
+
 ```bash
 # Set log level
 export LOG_LEVEL=debug
@@ -291,6 +328,7 @@ export ANTHROPIC_LOG=debug
 ```
 
 ### Network Debugging
+
 ```bash
 # Test connectivity
 curl -v http://localhost:3000/health
@@ -303,6 +341,7 @@ sudo netstat -tlnp | grep 3000
 ```
 
 ### API Request Debugging
+
 ```bash
 # Log all requests
 curl -v -X POST http://localhost:3000/v1/chat/completions \
@@ -316,9 +355,11 @@ curl -I http://localhost:3000/health
 ## Getting Help
 
 ### Log Collection
+
 When reporting issues, include:
 
 1. **System Information:**
+
    ```bash
    node --version
    npm --version
@@ -327,11 +368,13 @@ When reporting issues, include:
    ```
 
 2. **Application Logs:**
+
    ```bash
    npm run dev 2>&1 | tee debug.log
    ```
 
 3. **Configuration:**
+
    ```bash
    cat package.json
    cat tsconfig.json
@@ -339,11 +382,13 @@ When reporting issues, include:
    ```
 
 ### Resources
+
 - GitHub Issues: [Create Issue](https://github.com/eagurin/cynosure/issues/new)
 - Claude Code Docs: [Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - Discord Community: [Join](https://discord.gg/anthropic)
 
 ### Issue Template
+
 ```markdown
 **Describe the bug**
 A clear description of what the bug is.
@@ -361,6 +406,8 @@ What you expected to happen.
 
 **Logs**
 ```
+
 Paste relevant logs here
+
 ```
 ```

@@ -1,0 +1,154 @@
+name: Claude with Local Bridge
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for Claude'
+        required: true
+        type: string
+      bridge_url:
+        description: 'Cynosure Bridge URL (e.g., https://your-id.ngrok-free.app)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-local-bridge:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude-local')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude-local'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Parse Task and URL
+        id: parse
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+            BRIDGE_URL="${{ inputs.bridge_url }}"
+          else
+            # Extract task and URL from comment
+            COMMENT="${{ github.event.comment.body }}"
+            # Format: @claude-local URL task
+            BRIDGE_URL=$(echo "$COMMENT" | grep -oP '@claude-local\s+\K(https://[^\s]+)')
+            TASK=$(echo "$COMMENT" | sed "s/@claude-local\s*$BRIDGE_URL\s*//")
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "bridge_url=$BRIDGE_URL" >> $GITHUB_OUTPUT
+          echo "🌐 Bridge URL: $BRIDGE_URL"
+          echo "🎯 Task: $TASK"
+          
+      - name: Test Bridge Connection
+        run: |
+          BRIDGE_URL="${{ steps.parse.outputs.bridge_url }}"
+          echo "🔍 Testing connection to $BRIDGE_URL..."
+          
+          if curl -f "$BRIDGE_URL/health" > /dev/null 2>&1; then
+            echo "✅ Bridge is accessible"
+            curl -s "$BRIDGE_URL/health" | jq '.'
+          else
+            echo "❌ Cannot connect to bridge at $BRIDGE_URL"
+            exit 1
+          fi
+          
+      - name: Execute via Local Bridge
+        id: execute
+        run: |
+          BRIDGE_URL="${{ steps.parse.outputs.bridge_url }}"
+          TASK="${{ steps.parse.outputs.task }}"
+          
+          echo "🤖 Sending request to local Cynosure Bridge..."
+          
+          RESPONSE=$(curl -s -X POST "$BRIDGE_URL/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer local-bridge" \
+            -d "{
+              \"model\": \"gpt-4\",
+              \"messages\": [
+                {
+                  \"role\": \"system\", 
+                  \"content\": \"You are Claude, running through a local Cynosure Bridge. Respond helpfully and concisely.\"
+                },
+                {
+                  \"role\": \"user\", 
+                  \"content\": \"$TASK\"
+                }
+              ],
+              \"max_tokens\": 1000,
+              \"temperature\": 0.7
+            }" 2>&1)
+          
+          echo "📝 Raw Response:"
+          echo "$RESPONSE" | jq '.' 2>/dev/null || echo "$RESPONSE"
+          
+          # Extract Claude's response
+          if echo "$RESPONSE" | grep -q "choices"; then
+            CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "No response"' 2>/dev/null)
+            echo "✅ Successfully got response from Claude"
+          else
+            CLAUDE_RESPONSE="Error: Could not get valid response from bridge. Raw: $RESPONSE"
+            echo "❌ Failed to get valid response"
+          fi
+          
+          # Save for next steps
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Post Response as Comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = `${{ steps.execute.outputs.response }}`;
+            const task = `${{ steps.parse.outputs.task }}`;
+            const bridgeUrl = `${{ steps.parse.outputs.bridge_url }}`;
+            
+            const comment = `🤖 **Claude via Local Cynosure Bridge**
+
+**Bridge URL:** ${bridgeUrl}
+**Task:** ${task}
+
+**Response:**
+${response}
+
+---
+*🌐 Using local Cynosure Bridge*  
+*🧠 Powered by Claude MAX subscription*  
+*🔗 Connected via ngrok tunnel*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            
+      - name: Create Summary
+        run: |
+          echo "## 🎉 Local Bridge Task Completed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Bridge URL:** ${{ steps.parse.outputs.bridge_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Task:** ${{ steps.parse.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Architecture:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏠 Local Cynosure Bridge (your machine)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 Ngrok tunnel → GitHub Actions" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧠 Claude MAX subscription" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Response:**" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.execute.outputs.response }}" >> $GITHUB_STEP_SUMMARY

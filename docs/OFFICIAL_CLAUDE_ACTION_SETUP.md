@@ -99,7 +99,7 @@ Webhook secret: (оставить пустым)
 ### Ограничения
 
 ⚠️ **Работает только в GitHub Actions** (нужен runner)
-⚠️ **Требует настройки GitHub App** 
+⚠️ **Требует настройки GitHub App**
 ⚠️ **Cynosure Bridge должен стартовать** в том же job
 
 ## Workflow структура
