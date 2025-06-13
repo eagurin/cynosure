@@ -16,6 +16,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   claude-assist:
@@ -37,7 +38,7 @@ jobs:
       id: claude-task
       uses: anthropics/claude-code-action@beta
       with:
-        prompt: |
+        direct_prompt: |
           You are working on the Cynosure Bridge project, an OpenAI API-compatible proxy for Claude.
           
           PROJECT CONTEXT:
@@ -160,7 +161,7 @@ jobs:
     - name: Apply Quick Fix (MAX Subscription)
       uses: anthropics/claude-code-action@beta
       with:
-        prompt: |
+        direct_prompt: |
           Quick Fix Request: ${{ steps.parse.outputs.fix_request }}
           
           You are applying a quick fix to the Cynosure Bridge project.

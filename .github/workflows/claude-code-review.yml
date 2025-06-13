@@ -10,6 +10,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   claude-review:
@@ -51,7 +52,7 @@ jobs:
       id: claude-analysis
       uses: anthropics/claude-code-action@beta
       with:
-        prompt: |
+        direct_prompt: |
           Please review the following Pull Request for the Cynosure Bridge project.
           
           PROJECT CONTEXT:
@@ -151,7 +152,7 @@ jobs:
     - name: Apply Claude Code Fix (MAX Subscription)
       uses: anthropics/claude-code-action@beta
       with:
-        prompt: |
+        direct_prompt: |
           Fix Request: ${{ steps.parse-request.outputs.fix_request }}
           
           You are a TypeScript expert working on the Cynosure Bridge project.
