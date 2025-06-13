@@ -4,9 +4,7 @@
  */
 
 import { Anthropic } from '@anthropic-ai/sdk';
-import {
-  ClaudeCodeConfig,
-} from '../models/claude.js';
+import { ClaudeCodeConfig } from '../models/claude.js';
 import { OpenAIChatCompletionResponse } from '../models/openai.js';
 import { generateId, estimateTokenCount } from '../utils/helpers.js';
 import { exec } from 'child_process';
@@ -52,7 +50,7 @@ export class ClaudeApiClient {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // Fallback: if CLI failed, try API (if available)
       if (!this.useDirectApi && this.config.apiKey) {
         this.anthropic = new Anthropic({
@@ -60,7 +58,7 @@ export class ClaudeApiClient {
         });
         return await this.queryDirectApi(request);
       }
-      
+
       // Fallback: if API failed, try CLI (if no specific API key error)
       if (this.useDirectApi && !errorMessage.includes('credit')) {
         return await this.queryClaude(request);
@@ -74,7 +72,6 @@ export class ClaudeApiClient {
     if (!this.anthropic) {
       throw new Error('Anthropic client not initialized');
     }
-
 
     // Convert messages to Anthropic format
     const messages = request.messages.map(msg => ({
@@ -120,14 +117,16 @@ export class ClaudeApiClient {
   }
 
   private async queryClaude(request: ApiQuery): Promise<OpenAIChatCompletionResponse> {
-
     // Create prompt from messages
     const prompt = request.messages
       .map(msg => `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`)
       .join('\n\n');
 
     // Create temporary file to avoid shell escaping issues
-    const tempFile = path.join(tmpdir(), `claude_prompt_${Math.random().toString(36).substring(7)}.txt`);
+    const tempFile = path.join(
+      tmpdir(),
+      `claude_prompt_${Math.random().toString(36).substring(7)}.txt`
+    );
     await writeFile(tempFile, prompt, 'utf8');
 
     try {
@@ -209,7 +208,7 @@ export class ClaudeApiClient {
     // This is a simplified implementation - full streaming would require different API calls
     const response = await this.query(request);
     const content = response.choices[0]?.message?.content || '';
-    
+
     // Simulate streaming by yielding chunks
     const chunks = content.split(' ');
     for (let i = 0; i < chunks.length; i++) {
