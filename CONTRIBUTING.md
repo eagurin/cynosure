@@ -24,7 +24,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) for clear co
 
 Examples:
 
-```
+```bash
 feat: add support for GPT-4 Vision model mapping
 fix: handle streaming errors gracefully
 docs: update README with Docker instructions

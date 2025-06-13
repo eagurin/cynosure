@@ -26,6 +26,16 @@ export async function registerRoutes(fastify: FastifyInstance) {
     };
   });
 
+  // Test endpoint for debugging
+  fastify.post('/v1/test', async (request, reply) => {
+    return {
+      status: 'ok',
+      message: 'Test endpoint working',
+      body: request.body,
+      timestamp: new Date().toISOString()
+    };
+  });
+
   // OpenAI-compatible models endpoint
   fastify.get('/v1/models', async (_request, _reply) => {
     return {

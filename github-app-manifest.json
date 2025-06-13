@@ -1,7 +1,7 @@
 {
   "name": "Claude Assistant for Cynosure",
   "description": "Official Claude Code Action integration with Cynosure Bridge proxy",
-  "url": "https://github.com/laptop/cynosure",
+  "url": "https://github.com/eagurin/cynosure",
   "webhook_active": false,
   "public": false,
   "default_permissions": {
