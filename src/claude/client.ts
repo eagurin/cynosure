@@ -431,7 +431,7 @@ export class ClaudeCodeClient {
           return `Tool: ${tool.name}\nInput: ${JSON.stringify('input' in tool ? tool.input : {}, null, 2)}`;
         }
       }
-      
+
       if ('tool_call' in message && message.tool_call) {
         const tool = message.tool_call;
         if (tool && typeof tool === 'object' && 'name' in tool) {
@@ -447,7 +447,7 @@ export class ClaudeCodeClient {
           return JSON.stringify(result);
         }
       }
-      
+
       if ('tool_response' in message && message.tool_response) {
         const result = message.tool_response;
         if (result && typeof result === 'object') {
@@ -489,7 +489,7 @@ export class ClaudeCodeClient {
           };
         }
       }
-      
+
       if ('tool_call' in message && message.tool_call) {
         const tool = message.tool_call;
         if (tool && typeof tool === 'object' && 'name' in tool) {
@@ -508,7 +508,8 @@ export class ClaudeCodeClient {
             'tool_use_id' in result && typeof result.tool_use_id === 'string'
               ? result.tool_use_id
               : 'unknown';
-          const output = ('content' in result && result.content) || ('output' in result && result.output);
+          const output =
+            ('content' in result && result.content) || ('output' in result && result.output);
           return {
             name,
             input: {},
@@ -516,15 +517,14 @@ export class ClaudeCodeClient {
           };
         }
       }
-      
+
       if ('tool_response' in message && message.tool_response) {
         const result = message.tool_response;
         if (result && typeof result === 'object') {
           const name =
-            'call_id' in result && typeof result.call_id === 'string'
-              ? result.call_id
-              : 'unknown';
-          const output = ('content' in result && result.content) || ('output' in result && result.output);
+            'call_id' in result && typeof result.call_id === 'string' ? result.call_id : 'unknown';
+          const output =
+            ('content' in result && result.content) || ('output' in result && result.output);
           return {
             name,
             input: {},
