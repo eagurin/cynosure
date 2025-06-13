@@ -20,6 +20,8 @@ export async function registerRoutes(fastify: FastifyInstance) {
       service: 'cynosure-bridge',
       version: process.env.npm_package_version || '1.0.0',
       claude_code_available: true,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
     };
   });
 
