@@ -5,7 +5,7 @@
 ## Test Info
 
 - Created: 2025-06-13
-- Purpose: Test Claude integration  
+- Purpose: Test Claude integration
 - Status: Testing
 
 Claude, если ты видишь это - напиши комментарий!

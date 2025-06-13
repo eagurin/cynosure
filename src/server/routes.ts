@@ -27,12 +27,12 @@ export async function registerRoutes(fastify: FastifyInstance) {
   });
 
   // Test endpoint for debugging
-  fastify.post('/v1/test', async (request, reply) => {
+  fastify.post('/v1/test', async (request, _reply) => {
     return {
       status: 'ok',
       message: 'Test endpoint working',
       body: request.body,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   });
 
