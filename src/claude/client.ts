@@ -425,21 +425,31 @@ export class ClaudeCodeClient {
       if ('stderr' in message && typeof message.stderr === 'string') return message.stderr;
 
       // For tool messages, extract relevant information
-      if (
-        ('tool_use' in message && message.tool_use) ||
-        ('tool_call' in message && message.tool_call)
-      ) {
-        const tool = message.tool_use || message.tool_call;
+      if ('tool_use' in message && message.tool_use) {
+        const tool = message.tool_use;
         if (tool && typeof tool === 'object' && 'name' in tool) {
-          return `Tool: ${tool.name}\nInput: ${JSON.stringify('input' in tool ? tool.input : 'arguments' in tool ? tool.arguments : {}, null, 2)}`;
+          return `Tool: ${tool.name}\nInput: ${JSON.stringify('input' in tool ? tool.input : {}, null, 2)}`;
+        }
+      }
+      
+      if ('tool_call' in message && message.tool_call) {
+        const tool = message.tool_call;
+        if (tool && typeof tool === 'object' && 'name' in tool) {
+          return `Tool: ${tool.name}\nInput: ${JSON.stringify('arguments' in tool ? tool.arguments : {}, null, 2)}`;
         }
       }
 
-      if (
-        ('tool_result' in message && message.tool_result) ||
-        ('tool_response' in message && message.tool_response)
-      ) {
-        const result = message.tool_result || message.tool_response;
+      if ('tool_result' in message && message.tool_result) {
+        const result = message.tool_result;
+        if (result && typeof result === 'object') {
+          if ('content' in result && typeof result.content === 'string') return result.content;
+          if ('output' in result && typeof result.output === 'string') return result.output;
+          return JSON.stringify(result);
+        }
+      }
+      
+      if ('tool_response' in message && message.tool_response) {
+        const result = message.tool_response;
         if (result && typeof result === 'object') {
           if ('content' in result && typeof result.content === 'string') return result.content;
           if ('output' in result && typeof result.output === 'string') return result.output;
@@ -470,34 +480,51 @@ export class ClaudeCodeClient {
   private extractToolInfo(message: unknown): ClaudeCodeMessage['tool'] {
     if (message && typeof message === 'object') {
       // Handle tool_use messages
-      if (
-        ('tool_use' in message && message.tool_use) ||
-        ('tool_call' in message && message.tool_call)
-      ) {
-        const tool = message.tool_use || message.tool_call;
+      if ('tool_use' in message && message.tool_use) {
+        const tool = message.tool_use;
         if (tool && typeof tool === 'object' && 'name' in tool) {
           return {
             name: typeof tool.name === 'string' ? tool.name : 'unknown',
-            input: ('input' in tool && tool.input) || ('arguments' in tool && tool.arguments) || {},
+            input: ('input' in tool && tool.input) || {},
+          };
+        }
+      }
+      
+      if ('tool_call' in message && message.tool_call) {
+        const tool = message.tool_call;
+        if (tool && typeof tool === 'object' && 'name' in tool) {
+          return {
+            name: typeof tool.name === 'string' ? tool.name : 'unknown',
+            input: ('arguments' in tool && tool.arguments) || {},
           };
         }
       }
 
       // Handle tool_result messages
-      if (
-        ('tool_result' in message && message.tool_result) ||
-        ('tool_response' in message && message.tool_response)
-      ) {
-        const result = message.tool_result || message.tool_response;
+      if ('tool_result' in message && message.tool_result) {
+        const result = message.tool_result;
         if (result && typeof result === 'object') {
           const name =
             'tool_use_id' in result && typeof result.tool_use_id === 'string'
               ? result.tool_use_id
-              : 'call_id' in result && typeof result.call_id === 'string'
-                ? result.call_id
-                : 'unknown';
-          const output =
-            ('content' in result && result.content) || ('output' in result && result.output);
+              : 'unknown';
+          const output = ('content' in result && result.content) || ('output' in result && result.output);
+          return {
+            name,
+            input: {},
+            output,
+          };
+        }
+      }
+      
+      if ('tool_response' in message && message.tool_response) {
+        const result = message.tool_response;
+        if (result && typeof result === 'object') {
+          const name =
+            'call_id' in result && typeof result.call_id === 'string'
+              ? result.call_id
+              : 'unknown';
+          const output = ('content' in result && result.content) || ('output' in result && result.output);
           return {
             name,
             input: {},

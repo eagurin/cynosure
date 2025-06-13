@@ -133,13 +133,19 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
  * Deep merge objects
  */
 export function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
-  const result = { ...target };
+  const result = { ...target } as T;
 
   for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || ({} as T[keyof T]), source[key] as T[keyof T]);
+    const sourceValue = source[key];
+    if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+      const targetValue = result[key];
+      const mergedValue = deepMerge(
+        (targetValue && typeof targetValue === 'object' ? targetValue : {}) as Record<string, unknown>,
+        sourceValue as Record<string, unknown>
+      );
+      (result as Record<string, unknown>)[key] = mergedValue;
     } else {
-      result[key] = source[key] as T[keyof T];
+      (result as Record<string, unknown>)[key] = sourceValue;
     }
   }
 
