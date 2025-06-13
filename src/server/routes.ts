@@ -9,12 +9,7 @@ import {
   OpenAIChatCompletionResponse,
   OpenAIChatCompletionChunk,
 } from '../models/openai.js';
-import { ClaudeCodeClient } from '../claude/client.js';
-import { translateOpenAIRequestToClaudeCode } from '../translation/openai-to-claude.js';
-import {
-  translateClaudeResponseToOpenAI,
-  // createStreamingChunks - unused, keeping for future streaming support
-} from '../translation/claude-to-openai.js';
+import { ClaudeApiClient } from '../claude/api-client.js';
 import { formatSSE, createOpenAIError, sanitizeModelName } from '../utils/helpers.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
@@ -125,24 +120,32 @@ export async function registerRoutes(fastify: FastifyInstance) {
 
         // Get Claude Code config from environment
         const claudeConfig = {
-          apiKey: process.env.ANTHROPIC_API_KEY!,
+          apiKey: process.env.ANTHROPIC_API_KEY || '',
           model: sanitizedModel,
           workingDirectory: process.env.WORKING_DIRECTORY || process.cwd(),
           maxTurns: parseInt(process.env.MAX_TURNS || '5'),
           timeout: parseInt(process.env.TIMEOUT || '300000'), // 5 minutes
         };
 
-        // Initialize Claude Code client
-        const claudeClient = new ClaudeCodeClient(claudeConfig);
+        // Initialize Claude API client with fallback support
+        const claudeClient = new ClaudeApiClient(claudeConfig);
 
-        // Translate OpenAI request to Claude Code format
-        const claudeQuery = translateOpenAIRequestToClaudeCode(body);
+        // Create query for new API client
+        const apiQuery = {
+          model: body.model,
+          messages: body.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          max_tokens: body.max_tokens,
+          temperature: body.temperature,
+        };
 
         // Handle streaming vs non-streaming
         if (body.stream) {
-          return handleStreamingRequest(claudeClient, claudeQuery, body.model, reply);
+          return handleStreamingRequest(claudeClient, apiQuery, body.model, reply);
         } else {
-          return handleNonStreamingRequest(claudeClient, claudeQuery, body.model, reply);
+          return handleNonStreamingRequest(claudeClient, apiQuery, body.model, reply);
         }
       } catch (error) {
         fastify.log.error('Error in chat completions:', error);
@@ -165,28 +168,31 @@ export async function registerRoutes(fastify: FastifyInstance) {
   });
 }
 
+interface ApiQuery {
+  model: string;
+  messages: Array<{
+    role: string;
+    content: string;
+  }>;
+  max_tokens?: number;
+  temperature?: number;
+}
+
 async function handleNonStreamingRequest(
-  claudeClient: ClaudeCodeClient,
-  claudeQuery: any,
-  originalModel: string,
-  reply: FastifyReply
+  claudeClient: ClaudeApiClient,
+  apiQuery: ApiQuery,
+  _originalModel: string,
+  _reply: FastifyReply
 ): Promise<OpenAIChatCompletionResponse> {
-  const claudeResponse = await claudeClient.execute(claudeQuery);
+  const claudeResponse = await claudeClient.query(apiQuery);
 
-  // Check for errors in Claude response
-  const errorMessages = claudeResponse.messages.filter(msg => msg.type === 'error');
-  if (errorMessages.length > 0) {
-    reply.code(500);
-    throw new Error(`Claude Code error: ${errorMessages[0].content}`);
-  }
-
-  // Translate back to OpenAI format
-  return translateClaudeResponseToOpenAI(claudeResponse, originalModel);
+  // Return the response (already in OpenAI format from the new client)
+  return claudeResponse;
 }
 
 async function handleStreamingRequest(
-  claudeClient: ClaudeCodeClient,
-  claudeQuery: any,
+  claudeClient: ClaudeApiClient,
+  apiQuery: ApiQuery,
   originalModel: string,
   reply: FastifyReply
 ): Promise<void> {
@@ -200,37 +206,9 @@ async function handleStreamingRequest(
   });
 
   try {
-    // let messageIndex = 0; // Keeping for future streaming enhancements
-
-    for await (const message of claudeClient.executeStreaming(claudeQuery)) {
-      if (message.type === 'error') {
-        const errorChunk = formatSSE(createOpenAIError(message.content, 'claude_error'));
-        reply.raw.write(errorChunk);
-        break;
-      }
-
-      if (message.type === 'text' && message.content.trim()) {
-        const chunk: OpenAIChatCompletionChunk = {
-          id: `chatcmpl-${Date.now()}`,
-          object: 'chat.completion.chunk',
-          created: Math.floor(Date.now() / 1000),
-          model: originalModel,
-          choices: [
-            {
-              index: 0,
-              delta: {
-                role: 'assistant',
-                content: message.content,
-              },
-              finish_reason: null,
-            },
-          ],
-        };
-
-        const sseData = formatSSE(chunk);
-        reply.raw.write(sseData);
-        // messageIndex++; // Keeping for future streaming enhancements
-      }
+    for await (const chunkData of claudeClient.stream(apiQuery)) {
+      const sseData = formatSSE(chunkData);
+      reply.raw.write(sseData);
     }
 
     // Send final chunk

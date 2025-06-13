@@ -15,7 +15,7 @@ export function generateId(prefix: string = 'chatcmpl'): string {
 /**
  * Create SSE (Server-Sent Events) formatted data
  */
-export function formatSSE(data: any, event?: string): string {
+export function formatSSE(data: unknown, event?: string): string {
   const lines: string[] = [];
 
   if (event) {
@@ -101,12 +101,12 @@ export function isValidJSON(str: string): boolean {
 /**
  * Throttle function execution
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
@@ -118,12 +118,12 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Debounce function execution
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
@@ -132,14 +132,23 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Deep merge objects
  */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
-  const result = { ...target };
+export function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+  const result = { ...target } as T;
 
   for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || ({} as any), source[key] as any);
+    const sourceValue = source[key];
+    if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+      const targetValue = result[key];
+      const mergedValue = deepMerge(
+        (targetValue && typeof targetValue === 'object' ? targetValue : {}) as Record<
+          string,
+          unknown
+        >,
+        sourceValue as Record<string, unknown>
+      );
+      (result as Record<string, unknown>)[key] = mergedValue;
     } else {
-      result[key] = source[key] as any;
+      (result as Record<string, unknown>)[key] = sourceValue;
     }
   }
 

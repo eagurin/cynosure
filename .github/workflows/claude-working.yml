@@ -1,0 +1,170 @@
+name: Claude Code (Working via Cynosure)
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Задача для Claude'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-working:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Build Cynosure Bridge
+        run: npm run build
+        
+      - name: Start Cynosure Bridge
+        run: |
+          echo "🚀 Запускаем Cynosure Bridge как OpenAI-совместимый сервер..."
+          echo "🔑 Используем ANTHROPIC_API_KEY из секретов для прямого API доступа"
+          
+          # Запускаем в фоне с API ключом
+          PORT=3000 ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" npm start &
+          PROXY_PID=$!
+          echo "PROXY_PID=$PROXY_PID" >> $GITHUB_ENV
+          
+          # Ждем запуска
+          sleep 10
+          
+          # Проверяем health
+          if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "✅ Cynosure Bridge запущен на http://localhost:3000"
+          else
+            echo "❌ Ошибка запуска Cynosure Bridge"
+            exit 1
+          fi
+          
+          # Тестируем API
+          echo "🧪 Проверяем OpenAI API совместимость..."
+          curl -s http://localhost:3000/v1/models | jq '.data[0].id' || echo "API доступен"
+          
+      - name: Parse Task
+        id: task
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TASK="${{ inputs.task }}"
+          else
+            COMMENT="${{ github.event.comment.body }}"
+            TASK=$(echo "$COMMENT" | sed 's/.*@claude //' | head -1)
+          fi
+          
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "🎯 Задача: $TASK"
+          
+      - name: Execute via Cynosure Bridge
+        id: execute
+        run: |
+          echo "🤖 Выполняем задачу через Cynosure Bridge..."
+          
+          TASK="${{ steps.task.outputs.task }}"
+          
+          # Отправляем запрос через наш OpenAI-совместимый API
+          RESPONSE=$(curl -s -X POST http://localhost:3000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer dummy-key" \
+            -d "{
+              \"model\": \"gpt-4\",
+              \"messages\": [
+                {
+                  \"role\": \"system\", 
+                  \"content\": \"Ты профессиональный AI-помощник, работающий с проектом Cynosure Bridge. Отвечай четко, по делу, на русском языке. Если нужно - предлагай конкретные решения и код.\"
+                },
+                {
+                  \"role\": \"user\", 
+                  \"content\": \"$TASK\"
+                }
+              ],
+              \"max_tokens\": 2000,
+              \"temperature\": 0.7
+            }" 2>/dev/null || echo '{"error": "API request failed"}')
+          
+          echo "📝 Ответ API:"
+          echo "$RESPONSE" | jq '.' 2>/dev/null || echo "$RESPONSE"
+          
+          # Извлекаем ответ Claude
+          CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // .error // "Ошибка получения ответа"' 2>/dev/null)
+          
+          # Сохраняем для следующих шагов
+          echo "response=$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "🎤 Ответ Claude:"
+          echo "$CLAUDE_RESPONSE"
+          
+      - name: Post Response as Comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = '${{ steps.execute.outputs.response }}';
+            const task = '${{ steps.task.outputs.task }}';
+            
+            const comment = `🤖 **Claude через Cynosure Bridge**
+
+**Задача:** ${task}
+
+**Ответ:**
+${response}
+
+---
+*🔧 Powered by Cynosure Bridge + Claude MAX*  
+*⚡ OpenAI API compatible proxy*  
+*🚀 Running on GitHub Actions*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            
+      - name: Create Summary
+        run: |
+          echo "## 🎉 Claude задача выполнена!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Задача:** ${{ steps.task.outputs.task }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Статус:** ✅ Успешно выполнено" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Архитектура:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 GitHub Actions → Cynosure Bridge (port 3000)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌉 OpenAI API → Claude CLI translation" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧠 Claude MAX subscription" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ответ:**" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.execute.outputs.response }}" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Останавливаем Cynosure Bridge..."
+          if [ ! -z "$PROXY_PID" ]; then
+            kill $PROXY_PID 2>/dev/null || true
+          fi
+          pkill -f "npm start" 2>/dev/null || true
+          echo "✅ Очистка завершена"

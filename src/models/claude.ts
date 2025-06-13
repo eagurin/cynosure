@@ -18,8 +18,8 @@ export interface ClaudeCodeMessage {
   content: string;
   tool?: {
     name: string;
-    input: any;
-    output?: any;
+    input: unknown;
+    output?: unknown;
   };
   timestamp: number;
 }
