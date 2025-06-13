@@ -120,7 +120,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
 
         // Get Claude Code config from environment
         const claudeConfig = {
-          apiKey: process.env.ANTHROPIC_API_KEY || '',
+          apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-cli',
           model: sanitizedModel,
           workingDirectory: process.env.WORKING_DIRECTORY || process.cwd(),
           maxTurns: parseInt(process.env.MAX_TURNS || '5'),

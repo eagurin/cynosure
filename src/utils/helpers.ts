@@ -32,7 +32,9 @@ export function formatSSE(data: unknown, event?: string): string {
  * Validate environment variables
  */
 export function validateEnvironment(): void {
-  const required = ['ANTHROPIC_API_KEY'];
+  // ANTHROPIC_API_KEY is optional for health checks and CI environments
+  // The Claude CLI will handle the API key validation when actually making requests
+  const required: string[] = [];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
