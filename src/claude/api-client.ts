@@ -131,7 +131,7 @@ export class ClaudeApiClient {
 
     try {
       // Execute Claude CLI
-      const claudePath = process.env.CLAUDE_PATH || '/Users/laptop/.claude/local/claude';
+      const claudePath = process.env.CLAUDE_PATH || '/Users/laptop/.npm-global/bin/claude';
       const command = `${claudePath} -p --output-format json < "${tempFile}"`;
 
       const { stdout } = await execAsync(command, {
