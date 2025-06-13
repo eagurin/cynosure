@@ -9,13 +9,7 @@ import {
   OpenAIChatCompletionResponse,
   OpenAIChatCompletionChunk,
 } from '../models/openai.js';
-import { ClaudeCodeClient } from '../claude/client.js';
 import { ClaudeApiClient } from '../claude/api-client.js';
-import { translateOpenAIRequestToClaudeCode } from '../translation/openai-to-claude.js';
-import {
-  translateClaudeResponseToOpenAI,
-  // createStreamingChunks - unused, keeping for future streaming support
-} from '../translation/claude-to-openai.js';
 import { formatSSE, createOpenAIError, sanitizeModelName } from '../utils/helpers.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
@@ -126,7 +120,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
 
         // Get Claude Code config from environment
         const claudeConfig = {
-          apiKey: process.env.ANTHROPIC_API_KEY!,
+          apiKey: process.env.ANTHROPIC_API_KEY || '',
           model: sanitizedModel,
           workingDirectory: process.env.WORKING_DIRECTORY || process.cwd(),
           maxTurns: parseInt(process.env.MAX_TURNS || '5'),
@@ -174,11 +168,21 @@ export async function registerRoutes(fastify: FastifyInstance) {
   });
 }
 
+interface ApiQuery {
+  model: string;
+  messages: Array<{
+    role: string;
+    content: string;
+  }>;
+  max_tokens?: number;
+  temperature?: number;
+}
+
 async function handleNonStreamingRequest(
   claudeClient: ClaudeApiClient,
-  apiQuery: any,
-  originalModel: string,
-  reply: FastifyReply
+  apiQuery: ApiQuery,
+  _originalModel: string,
+  _reply: FastifyReply
 ): Promise<OpenAIChatCompletionResponse> {
   const claudeResponse = await claudeClient.query(apiQuery);
 
@@ -188,7 +192,7 @@ async function handleNonStreamingRequest(
 
 async function handleStreamingRequest(
   claudeClient: ClaudeApiClient,
-  apiQuery: any,
+  apiQuery: ApiQuery,
   originalModel: string,
   reply: FastifyReply
 ): Promise<void> {

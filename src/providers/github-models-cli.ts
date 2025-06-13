@@ -33,12 +33,12 @@ export class GitHubModelsCLIProvider {
       });
 
       if (stderr) {
-        console.warn('GitHub Models CLI warning:', stderr);
+        // GitHub Models CLI warning available (execute)
       }
 
       return stdout.trim();
     } catch (error) {
-      console.error('GitHub Models CLI error:', error);
+      // GitHub Models CLI error occurred (execute)
       throw new Error(
         `GitHub Models execution failed: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -67,12 +67,12 @@ export class GitHubModelsCLIProvider {
       await unlink(tempFile).catch(() => {});
 
       if (stderr) {
-        console.warn('GitHub Models CLI warning:', stderr);
+        // GitHub Models CLI warning available (executeWithContext)
       }
 
       return stdout.trim();
     } catch (error) {
-      console.error('GitHub Models CLI error:', error);
+      // GitHub Models CLI error occurred (executeWithContext)
       throw new Error(
         `GitHub Models execution failed: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -99,7 +99,7 @@ export class GitHubModelsCLIProvider {
           };
         });
     } catch (error) {
-      console.error('Failed to list models:', error);
+      // Failed to list models
       return [];
     }
   }

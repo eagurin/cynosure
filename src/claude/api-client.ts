@@ -5,9 +5,6 @@
 
 import { Anthropic } from '@anthropic-ai/sdk';
 import {
-  ClaudeCodeQuery,
-  ClaudeCodeResponse,
-  ClaudeCodeMessage,
   ClaudeCodeConfig,
 } from '../models/claude.js';
 import { OpenAIChatCompletionResponse } from '../models/openai.js';
@@ -40,18 +37,13 @@ export class ClaudeApiClient {
     this.useDirectApi = !!config.apiKey;
 
     if (this.useDirectApi && config.apiKey) {
-      console.log('🔑 Initializing direct Anthropic API client...');
       this.anthropic = new Anthropic({
         apiKey: config.apiKey,
       });
-    } else {
-      console.log('💻 Using Claude CLI for MAX subscription...');
     }
   }
 
   async query(request: ApiQuery): Promise<OpenAIChatCompletionResponse> {
-    console.log(`🤖 Processing query with ${this.useDirectApi ? 'API' : 'CLI'} method...`);
-
     try {
       if (this.useDirectApi && this.anthropic) {
         return await this.queryDirectApi(request);
@@ -59,12 +51,10 @@ export class ClaudeApiClient {
         return await this.queryClaude(request);
       }
     } catch (error: unknown) {
-      console.log('❌ Primary method failed, trying fallback...');
       const errorMessage = error instanceof Error ? error.message : String(error);
       
       // Fallback: if CLI failed, try API (if available)
       if (!this.useDirectApi && this.config.apiKey) {
-        console.log('🔄 Falling back to direct API...');
         this.anthropic = new Anthropic({
           apiKey: this.config.apiKey,
         });
@@ -73,7 +63,6 @@ export class ClaudeApiClient {
       
       // Fallback: if API failed, try CLI (if no specific API key error)
       if (this.useDirectApi && !errorMessage.includes('credit')) {
-        console.log('🔄 Falling back to Claude CLI...');
         return await this.queryClaude(request);
       }
 
@@ -86,7 +75,6 @@ export class ClaudeApiClient {
       throw new Error('Anthropic client not initialized');
     }
 
-    console.log('📡 Sending request to Anthropic API...');
 
     // Convert messages to Anthropic format
     const messages = request.messages.map(msg => ({
@@ -98,7 +86,7 @@ export class ClaudeApiClient {
       model: this.mapModel(request.model),
       max_tokens: request.max_tokens || 2048,
       temperature: request.temperature || 0.7,
-      messages: messages as any,
+      messages: messages as Anthropic.Messages.MessageParam[],
     });
 
     // Convert back to OpenAI format
@@ -132,7 +120,6 @@ export class ClaudeApiClient {
   }
 
   private async queryClaude(request: ApiQuery): Promise<OpenAIChatCompletionResponse> {
-    console.log('🖥️ Using Claude CLI execution...');
 
     // Create prompt from messages
     const prompt = request.messages
@@ -148,8 +135,7 @@ export class ClaudeApiClient {
       const claudePath = process.env.CLAUDE_PATH || '/Users/laptop/.claude/local/claude';
       const command = `${claudePath} -p --output-format json < "${tempFile}"`;
 
-      console.log('🔄 Executing Claude CLI...');
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout } = await execAsync(command, {
         timeout: 60000, // 60 second timeout
         env: {
           ...process.env,
@@ -163,7 +149,6 @@ export class ClaudeApiClient {
       try {
         claudeResult = JSON.parse(stdout);
       } catch (parseError) {
-        console.log('📄 Raw Claude output:', stdout);
         throw new Error(`Failed to parse Claude response: ${parseError}`);
       }
 
@@ -202,7 +187,7 @@ export class ClaudeApiClient {
       try {
         await unlink(tempFile);
       } catch (cleanupError) {
-        console.warn('⚠️ Failed to cleanup temp file:', cleanupError);
+        // Ignore cleanup errors
       }
     }
   }

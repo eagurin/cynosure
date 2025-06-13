@@ -16,7 +16,7 @@ async function createServer() {
   try {
     validateEnvironment();
   } catch (error) {
-    console.error('❌ Environment validation failed:', error);
+    process.stderr.write(`❌ Environment validation failed: ${error}\n`);
     process.exit(1);
   }
 
@@ -123,7 +123,7 @@ async function start() {
 
     await fastify.listen({ port, host });
 
-    console.log(`
+    fastify.log.info(`
 🚀 Cynosure Bridge is running!
 
 📊 Server Info:
@@ -145,30 +145,30 @@ async function start() {
 🧠 Powered by Claude Code SDK with MAX subscription
 `);
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    process.stderr.write(`❌ Failed to start server: ${error}\n`);
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Received SIGINT. Graceful shutdown...');
+  process.stdout.write('\n🛑 Received SIGINT. Graceful shutdown...\n');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n🛑 Received SIGTERM. Graceful shutdown...');
+  process.stdout.write('\n🛑 Received SIGTERM. Graceful shutdown...\n');
   process.exit(0);
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', error => {
-  console.error('💥 Uncaught Exception:', error);
+  process.stderr.write(`💥 Uncaught Exception: ${error}\n`);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.stderr.write(`💥 Unhandled Rejection at: ${promise} reason: ${reason}\n`);
   process.exit(1);
 });
 
