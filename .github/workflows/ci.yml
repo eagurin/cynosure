@@ -87,6 +87,28 @@ jobs:
       with:
         file: ./coverage/lcov.info
         fail_ci_if_error: false
+    
+    - name: Test health check
+      if: matrix.node-version == '20.x'
+      run: |
+        echo "Starting Cynosure Bridge..."
+        npm start &
+        PROXY_PID=$!
+        
+        echo "Waiting for server to start..."
+        sleep 5
+        
+        echo "Testing health endpoint..."
+        if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed"
+          kill $PROXY_PID || true
+          exit 1
+        fi
+        
+        echo "Cleaning up..."
+        kill $PROXY_PID || true
 
   # Docker build temporarily disabled - application works perfectly without containerization
   # Re-enable when needed by uncommenting the docker job below
