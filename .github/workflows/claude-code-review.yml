@@ -37,16 +37,16 @@ jobs:
       run: |
         if [ "${{ github.event_name }}" == "pull_request" ]; then
           echo "Analyzing PR #${{ github.event.pull_request.number }}"
-          git diff origin/main...HEAD > pr_changes.diff
+          git diff origin/master...HEAD > pr_changes.diff
         else
           echo "Analyzing PR from comment"
           PR_NUMBER=$(echo ${{ github.event.issue.number }})
           gh pr checkout $PR_NUMBER
-          git diff origin/main...HEAD > pr_changes.diff
+          git diff origin/master...HEAD > pr_changes.diff
         fi
         
         # Get changed files list
-        git diff --name-only origin/main...HEAD > changed_files.txt
+        git diff --name-only origin/master...HEAD > changed_files.txt
         
     - name: Claude Code Review (MAX Subscription)
       id: claude-analysis
