@@ -124,17 +124,15 @@ jobs:
           
           # Сохраняем ответ для комментария
           CLAUDE_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "Ошибка получения ответа от Claude")
-          echo "response<<EOF" >> $GITHUB_OUTPUT
-          echo "$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "response=$CLAUDE_RESPONSE" >> $GITHUB_OUTPUT
           
       - name: Comment Response
         if: github.event_name == 'issue_comment'
         uses: actions/github-script@v7
         with:
           script: |
-            const response = `${{ steps.execute.outputs.response }}`;
-            const task = `${{ steps.task.outputs.task }}`;
+            const response = '${{ steps.execute.outputs.response }}';
+            const task = '${{ steps.task.outputs.task }}';
             
             const comment = `🤖 **Claude через Cynosure Bridge**
             
