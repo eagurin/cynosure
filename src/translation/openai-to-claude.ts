@@ -26,7 +26,7 @@ export function translateOpenAIRequestToClaudeCode(
     prompt,
     options: {
       maxTurns,
-      systemPrompt: systemMessage?.content,
+      systemPrompt: typeof systemMessage?.content === 'string' ? systemMessage.content : undefined,
       workingDirectory: process.cwd(),
     },
   };
@@ -36,15 +36,22 @@ function combineMessagesToPrompt(messages: OpenAIMessage[]): string {
   const parts: string[] = [];
 
   for (const message of messages) {
+    const content =
+      typeof message.content === 'string'
+        ? message.content
+        : Array.isArray(message.content)
+          ? message.content.map(item => (item.type === 'text' ? item.text : '[Image]')).join(' ')
+          : String(message.content);
+
     switch (message.role) {
       case 'user':
-        parts.push(`Human: ${message.content}`);
+        parts.push(`Human: ${content}`);
         break;
       case 'assistant':
-        parts.push(`Assistant: ${message.content}`);
+        parts.push(`Assistant: ${content}`);
         break;
       case 'function':
-        parts.push(`Function ${message.name}: ${message.content}`);
+        parts.push(`Function ${message.name}: ${content}`);
         break;
     }
   }

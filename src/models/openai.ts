@@ -3,9 +3,25 @@
  * Compatible with OpenAI Chat Completions API
  */
 
+// Vision support types
+export interface OpenAIImageContent {
+  type: 'image_url';
+  image_url: {
+    url: string;
+    detail?: 'low' | 'high' | 'auto';
+  };
+}
+
+export interface OpenAITextContent {
+  type: 'text';
+  text: string;
+}
+
+export type OpenAIMessageContent = string | Array<OpenAITextContent | OpenAIImageContent>;
+
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant' | 'function';
-  content: string;
+  content: OpenAIMessageContent;
   name?: string;
   function_call?: {
     name: string;

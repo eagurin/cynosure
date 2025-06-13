@@ -141,7 +141,9 @@ const EMBEDDING_MODELS = {
 - ES modules with `.js` extensions in imports (even for `.ts` files)
 - Strict mode enabled
 - Target: ES2022
-- Module resolution: bundler
+- Module resolution: node
+- Path aliases: `@/` maps to `src/`
+- Declaration files generated for build output
 
 ## Environment Variables
 
@@ -189,24 +191,29 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 # Streaming
 curl -X POST http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "gpt-4", "messages": [...], "stream": true}'
+  -H "Authorization: Bearer dummy-key" \
+  -d '{"model": "gpt-4", "messages": [{"role": "user", "content": "Hello"}], "stream": true}'
 
 # Embeddings
 curl -X POST http://localhost:3000/v1/embeddings \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dummy-key" \
   -d '{"model": "text-embedding-3-small", "input": "Hello world"}'
 
 # Health check
 curl http://localhost:3000/health
 
-# Metrics (if enabled)
-curl http://localhost:3000/metrics
-
 # List models
 curl http://localhost:3000/v1/models
 
+# API Documentation (development only)
+curl http://localhost:3000/docs
+
 # Network access (from any device)
 curl http://192.168.1.196:3000/health
+
+# Built-in test script
+./scripts/cynosure-local.sh test
 ```
 
 ## Git Workflow
@@ -256,10 +263,14 @@ curl http://192.168.1.196:3000/health
 
 ### Testing Strategy
 
-- Unit tests for individual functions
-- Integration tests for API routes
-- E2E tests for full request flow
-- Coverage reporting with Vitest
+- **Vitest** as test runner with Node environment
+- **Coverage** with V8 provider (text, lcov, html reports)
+- **Test Structure**:
+  - Unit tests: `tests/unit/` - Individual functions and utilities
+  - Integration tests: `tests/integration/` - API routes and server logic
+  - E2E tests: `tests/e2e/` - Full request/response flows
+- **Path aliases**: `@/` available in tests for imports
+- **Globals enabled**: No need to import `describe`, `it`, `expect`
 
 ## Management Scripts
 
@@ -301,6 +312,60 @@ ws.send(
   })
 );
 ```
+
+### GitHub Integration
+
+```bash
+# GitHub webhook endpoint
+POST /github/webhook
+# Handles: pull_request, issue_comment, pull_request_review_comment
+
+# Manual analyze endpoint
+POST /github/analyze
+{
+  "repo": "owner/repo",
+  "pr_number": 123,
+  "content": "Analyze this code"
+}
+```
+
+**Supported triggers:**
+
+- `@claude` - Mention in PR/issue comments
+- `/review` - Request code review
+- `/analyze` - Request analysis
+- `please review` - Auto-trigger on PR creation
+
+### Vision Support
+
+```javascript
+// Chat with images
+{
+  "model": "gpt-4",
+  "messages": [{
+    "role": "user",
+    "content": [
+      { "type": "text", "text": "What's in this image?" },
+      {
+        "type": "image_url",
+        "image_url": {
+          "url": "data:image/jpeg;base64,/9j/4AAQ...",
+          "detail": "high"
+        }
+      }
+    ]
+  }]
+}
+```
+
+### Enhanced Metadata
+
+Claude CLI responses now include parsed metadata:
+
+- **Session ID** - Claude conversation session
+- **Token counts** - Accurate prompt/completion/total tokens
+- **Cost tracking** - Usage cost information
+- **Duration** - Response time metrics
 
 ### Function Calling
 
@@ -348,3 +413,6 @@ ws.send(
 - **Dual protocols**: SSE streaming + WebSocket bidirectional support (planned)
 - **LangChain integration**: Advanced orchestration and tool calling capabilities
 - **Security built-in**: CORS, rate limiting, authentication middleware
+- **API Documentation**: Swagger UI available at `/docs` in development mode
+- **Graceful shutdown**: Handles SIGINT/SIGTERM with cleanup
+- **Error handling**: Comprehensive error handling with proper HTTP status codes

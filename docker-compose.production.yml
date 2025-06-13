@@ -1,0 +1,109 @@
+# Production Docker Compose for Cynosure Bridge
+version: '3.8'
+
+services:
+  cynosure:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+      target: production
+    container_name: cynosure-bridge-prod
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+      - ENABLE_RATE_LIMITING=true
+      - RATE_LIMIT_MAX=100
+      - RATE_LIMIT_WINDOW=60000
+      - CORS_ORIGINS=*
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.cynosure.rule=Host(`cynosure.local`)'
+      - 'traefik.http.services.cynosure.loadbalancer.server.port=3000'
+    networks:
+      - cynosure-network
+
+  # Redis for advanced rate limiting and caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: cynosure-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - cynosure-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: cynosure-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - cynosure
+    networks:
+      - cynosure-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cynosure-prometheus
+    restart: unless-stopped
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - cynosure-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cynosure-grafana
+    restart: unless-stopped
+    ports:
+      - '3001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=cynosure_admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - cynosure-network
+
+networks:
+  cynosure-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:

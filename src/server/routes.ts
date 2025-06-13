@@ -17,15 +17,19 @@ import {
   mapModelToClaud,
   EMBEDDING_MODELS,
 } from '../utils/helpers.js';
+import { metricsCollector, formatPrometheusMetrics } from '../utils/metrics.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
-  // Health check endpoint
+  // Health check endpoint with enhanced metrics
   fastify.get('/health', async (_request, _reply) => {
+    const healthStatus = metricsCollector.getHealthStatus();
+
     return {
-      status: 'ok',
+      status: healthStatus.status,
       service: 'cynosure-bridge',
       version: process.env.npm_package_version || '1.0.0',
       claude_code_available: true,
+      checks: healthStatus.checks,
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       timestamp: new Date().toISOString(),
@@ -126,7 +130,30 @@ export async function registerRoutes(fastify: FastifyInstance) {
                 required: ['role', 'content'],
                 properties: {
                   role: { type: 'string', enum: ['system', 'user', 'assistant', 'function'] },
-                  content: { type: 'string' },
+                  content: {
+                    oneOf: [
+                      { type: 'string' },
+                      {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['text', 'image_url'] },
+                            text: { type: 'string' },
+                            image_url: {
+                              type: 'object',
+                              properties: {
+                                url: { type: 'string' },
+                                detail: { type: 'string', enum: ['low', 'high', 'auto'] },
+                              },
+                              required: ['url'],
+                            },
+                          },
+                          required: ['type'],
+                        },
+                      },
+                    ],
+                  },
                   name: { type: 'string' },
                   function_call: { type: 'object' },
                 },
@@ -178,12 +205,19 @@ export async function registerRoutes(fastify: FastifyInstance) {
         // Initialize Claude API client with fallback support
         const claudeClient = new ClaudeApiClient(claudeConfig);
 
-        // Create query for new API client
+        // Create query for new API client with vision support
         const apiQuery = {
           model: body.model,
           messages: body.messages.map(msg => ({
             role: msg.role,
-            content: msg.content,
+            content:
+              typeof msg.content === 'string'
+                ? msg.content
+                : Array.isArray(msg.content)
+                  ? msg.content
+                      .map(item => (item.type === 'text' ? item.text : '[Image]'))
+                      .join(' ')
+                  : String(msg.content),
           })),
           max_tokens: body.max_tokens,
           temperature: body.temperature,
@@ -262,15 +296,100 @@ export async function registerRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Metrics endpoint for monitoring
-  fastify.get('/metrics', async (_request, _reply) => {
+  // GitHub webhook endpoint
+
+  fastify.post(
+    '/github/webhook',
+    async (request: FastifyRequest<{ Body: GitHubWebhookBody }>, reply: FastifyReply) => {
+      try {
+        const { body } = request;
+        const event = request.headers['x-github-event'] as string;
+
+        // Log GitHub webhook for debugging
+        fastify.log.info(`GitHub webhook: ${event}`, body);
+
+        // Handle different GitHub events
+        if (event === 'pull_request' && body.action === 'opened') {
+          await handlePullRequestOpened(body, fastify);
+        } else if (event === 'issue_comment' && body.comment) {
+          await handleIssueComment(body, fastify);
+        } else if (event === 'pull_request_review_comment' && body.comment) {
+          await handlePullRequestComment(body, fastify);
+        }
+
+        return { status: 'ok', event, action: body.action };
+      } catch (error) {
+        fastify.log.error('GitHub webhook error:', error);
+        reply.code(500);
+        return { error: 'Webhook processing failed' };
+      }
+    }
+  );
+
+  // GitHub analyze endpoint (manual trigger)
+  interface GitHubAnalyzeBody {
+    repo: string;
+    pr_number?: number;
+    issue_number?: number;
+    content?: string;
+  }
+
+  fastify.post(
+    '/github/analyze',
+    async (request: FastifyRequest<{ Body: GitHubAnalyzeBody }>, reply: FastifyReply) => {
+      try {
+        const { repo, pr_number, issue_number, content } = request.body;
+
+        if (!repo) {
+          reply.code(400);
+          return { error: 'Repository name is required' };
+        }
+
+        // Analyze content using Claude
+        const analysis = await analyzeWithClaude(content || 'Analyze this repository', fastify);
+
+        return {
+          status: 'success',
+          repo,
+          pr_number,
+          issue_number,
+          analysis,
+        };
+      } catch (error) {
+        fastify.log.error('GitHub analyze error:', error);
+        reply.code(500);
+        return { error: 'Analysis failed' };
+      }
+    }
+  );
+
+  // Prometheus metrics endpoint
+  fastify.get('/metrics', async (request, reply) => {
+    const accept = request.headers.accept || '';
+
+    if (accept.includes('application/openmetrics-text') || accept.includes('text/plain')) {
+      // Return Prometheus format
+      reply.type('text/plain; version=0.0.4; charset=utf-8');
+      return formatPrometheusMetrics(metricsCollector.getMetrics());
+    } else {
+      // Return JSON format
+      return {
+        service: 'cynosure-bridge',
+        version: process.env.npm_package_version || '1.0.0',
+        system: metricsCollector.getSystemMetrics(),
+        endpoints: metricsCollector.getMetrics(),
+        timestamp: new Date().toISOString(),
+      };
+    }
+  });
+
+  // Debug metrics endpoint
+  fastify.get('/debug/metrics', async (_request, _reply) => {
     return {
       service: 'cynosure-bridge',
-      version: process.env.npm_package_version || '1.0.0',
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      requests_total: 'N/A', // TODO: implement proper metrics
-      errors_total: 'N/A',
+      system: metricsCollector.getSystemMetrics(),
+      health: metricsCollector.getHealthStatus(),
+      endpoints: metricsCollector.getMetrics(),
       timestamp: new Date().toISOString(),
     };
   });
@@ -293,6 +412,33 @@ interface ApiQuery {
   }>;
   max_tokens?: number;
   temperature?: number;
+}
+
+interface GitHubWebhookBody {
+  action?: string;
+  pull_request?: {
+    number: number;
+    title: string;
+    body?: string;
+    head: { sha: string };
+    base: { ref: string };
+    html_url: string;
+  };
+  issue?: {
+    number: number;
+    title: string;
+    body?: string;
+    html_url: string;
+  };
+  comment?: {
+    body: string;
+    html_url: string;
+    user: { login: string };
+  };
+  repository?: {
+    full_name: string;
+    html_url: string;
+  };
 }
 
 async function handleNonStreamingRequest(
@@ -362,4 +508,93 @@ function simpleHash(str: string): number {
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);
+}
+
+// GitHub webhook handlers
+async function handlePullRequestOpened(
+  body: GitHubWebhookBody,
+  fastify: FastifyInstance
+): Promise<void> {
+  if (!body.pull_request || !body.repository) return;
+
+  const { pull_request: pr, repository: repo } = body;
+  fastify.log.info(`PR opened: ${repo.full_name}#${pr.number}`);
+
+  // Auto-analyze PR if it contains certain keywords
+  const autoTriggers = ['@claude', '/review', 'please review'];
+  const shouldAnalyze = autoTriggers.some(
+    trigger =>
+      pr.title.toLowerCase().includes(trigger) ||
+      (pr.body && pr.body.toLowerCase().includes(trigger))
+  );
+
+  if (shouldAnalyze) {
+    const analysis = await analyzeWithClaude(
+      `Analyze this pull request: ${pr.title}\n\n${pr.body || ''}`,
+      fastify
+    );
+    fastify.log.info(`Auto-analysis completed for PR #${pr.number}:`, analysis);
+  }
+}
+
+async function handleIssueComment(
+  body: GitHubWebhookBody,
+  fastify: FastifyInstance
+): Promise<void> {
+  if (!body.comment || !body.issue) return;
+
+  const comment = body.comment.body;
+  const triggers = ['@claude', '/analyze', '/review'];
+
+  if (triggers.some(trigger => comment.includes(trigger))) {
+    const analysis = await analyzeWithClaude(comment, fastify);
+    fastify.log.info(`Issue comment analysis:`, analysis);
+  }
+}
+
+async function handlePullRequestComment(
+  body: GitHubWebhookBody,
+  fastify: FastifyInstance
+): Promise<void> {
+  if (!body.comment) return;
+
+  const comment = body.comment.body;
+  const triggers = ['@claude', '/analyze', '/review'];
+
+  if (triggers.some(trigger => comment.includes(trigger))) {
+    const analysis = await analyzeWithClaude(comment, fastify);
+    fastify.log.info(`PR comment analysis:`, analysis);
+  }
+}
+
+async function analyzeWithClaude(content: string, fastify: FastifyInstance): Promise<string> {
+  try {
+    // Use Claude to analyze the content
+    const claudeConfig = {
+      apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-cli',
+      model: 'claude-3-5-sonnet-20241022',
+      workingDirectory: process.env.WORKING_DIRECTORY || process.cwd(),
+      maxTurns: 3,
+      timeout: 60000,
+    };
+
+    const claudeClient = new ClaudeApiClient(claudeConfig);
+
+    const response = await claudeClient.query({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'user',
+          content: `Please analyze this GitHub content:\n\n${content}`,
+        },
+      ],
+      max_tokens: 1000,
+    });
+
+    const responseContent = response.choices[0]?.message?.content;
+    return typeof responseContent === 'string' ? responseContent : 'Analysis completed';
+  } catch (error) {
+    fastify.log.error('Claude analysis error:', error);
+    return 'Analysis failed';
+  }
 }

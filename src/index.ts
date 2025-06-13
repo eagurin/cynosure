@@ -10,6 +10,12 @@ import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { registerRoutes } from './server/routes.js';
 import { validateEnvironment } from './utils/helpers.js';
+import { createMetricsMiddleware } from './utils/metrics.js';
+import {
+  createRateLimitMiddleware,
+  createAuthMiddleware,
+  createCorsConfig,
+} from './utils/security.js';
 
 async function createServer() {
   // Validate environment variables
@@ -38,13 +44,39 @@ async function createServer() {
     },
   });
 
-  // Register CORS
-  await fastify.register(cors, {
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  });
+  // Register enhanced CORS
+  const allowedOrigins = process.env.CORS_ORIGINS?.split(',').map(s => s.trim());
+  const corsConfig = createCorsConfig(allowedOrigins);
+  await fastify.register(cors, corsConfig);
+
+  // Register metrics middleware
+  fastify.addHook('preHandler', createMetricsMiddleware());
+
+  // Register rate limiting (if enabled)
+  if (process.env.ENABLE_RATE_LIMITING !== 'false') {
+    const rateLimitConfig = {
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW || '60000'), // 1 minute
+      maxRequests: parseInt(process.env.RATE_LIMIT_MAX || '100'),
+      message: 'Too many requests, please try again later',
+    };
+    fastify.addHook('preHandler', createRateLimitMiddleware(rateLimitConfig));
+  }
+
+  // Register authentication middleware (if API keys are configured)
+  const allowedApiKeys = process.env.PROXY_API_KEYS?.split(',').map(s => s.trim());
+  if (allowedApiKeys && allowedApiKeys.length > 0) {
+    fastify.addHook('preHandler', async (request, reply) => {
+      // Skip auth for health and metrics endpoints
+      if (
+        request.url?.startsWith('/health') ||
+        request.url?.startsWith('/metrics') ||
+        request.url?.startsWith('/docs')
+      ) {
+        return;
+      }
+      return createAuthMiddleware(allowedApiKeys)(request, reply);
+    });
+  }
 
   // Register Swagger for API documentation
   if (process.env.NODE_ENV !== 'production') {

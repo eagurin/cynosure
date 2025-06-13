@@ -1,397 +1,814 @@
-# 🌟 Cynosure Bridge
+# 🌟 Cynosure Bridge - Полное руководство автономного запуска
 
-**OpenAI-compatible API proxy for Claude Code SDK** - enabling Claude MAX subscription usage worldwide + **Network Proxy Server**
+**OpenAI-compatible API proxy для Claude Code SDK** - используйте Claude MAX подписку по всему миру + **Network Proxy Server**
 
 ![Build Status](https://github.com/eagurin/cynosure/workflows/CI/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node.js](https://img.shields.io/badge/node.js-18%2B-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-5.0%2B-blue.svg)
 
-Cynosure Bridge is a **production-ready OpenAI-compatible proxy** that enables Claude MAX subscription usage through local and network connections, solving geographical limitations while providing a high-performance alternative to expensive API tokens.
+## 🎯 **БЫСТРЫЙ СТАРТ БЕЗ AI**
 
-## 🎯 Key Features
+### 📁 **Местоположение проекта:**
 
-### ✅ **Core Functionality** (Production Ready)
-
-- **🌐 Network Proxy Server** - Share Claude MAX across multiple devices/applications
-- **🏠 Local Development Mode** - Direct localhost access for development
-- **🤖 GitHub Actions Integration** - Self-hosted runner support with @claude comments
-- **⚡ Full OpenAI API Compatibility** - Drop-in replacement for existing applications
-- **🔄 Streaming Responses** - Real-time SSE streaming support
-- **🗺️ Automatic Model Mapping** - Seamless OpenAI ↔ Claude model translation
-- **🐳 Docker Ready** - Containerized deployment with production configurations
-- **📊 Monitoring & Health Checks** - Comprehensive status monitoring and logging
-- **🔍 Vector Embeddings** - `/v1/embeddings` endpoint with OpenAI compatibility
-
-### 🚀 **Advanced Features** (Ready)
-
-- **📡 Network Access** - Available at `http://192.168.1.196:3000` for all network devices
-- **🏭 Factory Management** - Automated service management with restart capabilities
-- **🔧 Multiple Management Scripts** - Simple and advanced factory management options
-- **📚 Complete Documentation** - Client examples for Python, JavaScript, React, Mobile
-- **🔒 Security Ready** - CORS configuration, optional authentication, rate limiting
-- **🔗 LangChain Integration** - Advanced orchestration, streaming, and tool calling
-- **📊 Metrics & Monitoring** - Prometheus metrics, health checks, structured logging
-- **⚡ Performance Optimized** - 22% faster than tunnel-based solutions
-- **🔄 Auto-Restart** - Built-in monitoring and automatic failure recovery
-
-### 🔄 **Coming Soon**
-
-- **🔌 WebSocket Support** - Real-time bidirectional communication (documented, implementation ready)
-- **🧩 MCP Protocol Support** - Extended capabilities through Model Context Protocol
-- **⚙️ Function Calling** - OpenAI tools/functions support (architecture complete)
-- **🚄 Redis Caching** - Performance optimization layer
-- **📋 Structured Output** - Schema-based JSON responses
-- **🎛️ Web Dashboard** - Service monitoring and management UI
-
-## 🏗️ Architecture
-
-### **Current: Network Proxy Architecture**
-
-```mermaid
-graph TB
-    A[Mobile Apps] -->|HTTP| E[Cynosure Bridge]
-    B[Web Apps] -->|HTTP| E
-    C[GitHub Actions] -->|localhost| E
-    D[Other Devices] -->|192.168.1.196:3000| E
-
-    E -->|Claude CLI| F[Claude MAX Subscription]
-
-    E --> G[Health Monitoring]
-    E --> H[Request Logging]
-    E --> I[Auto Restart]
+```
+/Users/laptop/dev/cynosure/
 ```
 
-### **Request Flow:**
+### 🚀 **Автоматическая установка и запуск:**
 
-1. **Any OpenAI-compatible app** → `http://192.168.1.196:3000/v1/chat/completions`
-2. **Request validation** and automatic model mapping
-3. **Translation** to Claude format + temporary file handling
-4. **Claude CLI execution** using local MAX subscription
-5. **Response translation** back to OpenAI format
-6. **SSE streaming** or JSON response delivery
+```bash
+# 1. Переход в директорию проекта
+cd /Users/laptop/dev/cynosure
 
-## 📊 Project Status
+# 2. Полная автоматическая установка (один раз)
+./scripts/all-in-one-setup.sh
 
-- **🟢 Production Ready**: Core API, Network Proxy, Factory Management
-- **🟡 Stable**: GitHub Actions Integration, Docker Support
-- **🔵 Planned**: WebSocket Support, Advanced Features
+# 3. Запуск сервера
+./scripts/cynosure-local.sh start
 
-**Current Version**: `v2.0.0` - **Network Proxy Edition**
+# 4. Проверка статуса
+./scripts/cynosure-local.sh status
 
-## 🚀 Quick Start
+# 5. Тестирование всех endpoints
+./scripts/cynosure-local.sh test
+```
 
-### 1. **Instant Network Access** (Already Working!)
+### 🌐 **Доступные URLs:**
 
-Your Cynosure Bridge is **already running** and available:
+- **Локально:** http://localhost:3000
+- **По сети:** http://192.168.1.196:3000
+- **Health check:** http://localhost:3000/health
+- **API документация:** http://localhost:3000/docs
 
-- **Local access**: `http://localhost:3000`
-- **Network access**: `http://192.168.1.196:3000`
-- **Health check**: `http://192.168.1.196:3000/health`
+---
 
-### 2. **Test from any device in your network:**
+## 📜 **ПОЛНЫЙ СПИСОК СКРИПТОВ**
+
+### 1. **🏠 Основное управление (`scripts/cynosure-local.sh`):**
+
+```bash
+# Запуск сервера (автоматическая сборка + запуск)
+./scripts/cynosure-local.sh start
+
+# Остановка сервера
+./scripts/cynosure-local.sh stop
+
+# Перезапуск сервера (при изменениях кода)
+./scripts/cynosure-local.sh restart
+
+# Полный статус сервера
+./scripts/cynosure-local.sh status
+
+# Просмотр логов
+./scripts/cynosure-local.sh logs
+
+# Тестирование всех API endpoints
+./scripts/cynosure-local.sh test
+```
+
+### 2. **⚡ Быстрые команды (`scripts/quick-commands.sh`):**
+
+```bash
+# Быстрый старт с автотестами
+./scripts/quick-commands.sh start
+
+# Быстрый перезапуск с обновлением
+./scripts/quick-commands.sh restart
+
+# Быстрое тестирование всех endpoints
+./scripts/quick-commands.sh test
+
+# Быстрый статус сервера
+./scripts/quick-commands.sh status
+
+# Быстрая очистка временных файлов
+./scripts/quick-commands.sh clean
+
+# Быстрый ремонт (переустановка + сборка)
+./scripts/quick-commands.sh fix
+
+# Быстрый тест производительности
+./scripts/quick-commands.sh benchmark
+```
+
+### 3. **🔧 Полная автоматическая установка (`scripts/all-in-one-setup.sh`):**
+
+```bash
+# Полная установка от начала до конца
+./scripts/all-in-one-setup.sh
+
+# Что делает:
+# ✅ Проверяет все зависимости (Node.js, Claude CLI, npm, curl)
+# ✅ Устанавливает npm пакеты
+# ✅ Создает .env конфигурацию
+# ✅ Собирает проект
+# ✅ Проверяет TypeScript типы
+# ✅ Запускает unit тесты
+# ✅ Тестирует запуск сервера
+# ✅ Проверяет API endpoints
+```
+
+---
+
+## 📊 **58 NPM СКРИПТОВ**
+
+### **🏗️ Разработка:**
+
+```bash
+# Запуск в режиме разработки (hot reload)
+npm run dev
+
+# Запуск с дебаггером
+npm run dev:debug
+
+# Сборка проекта
+npm run build
+
+# Запуск production версии
+npm start
+
+# Production с переменными
+npm run start:prod
+```
+
+### **🧪 Тестирование:**
+
+```bash
+# Все тесты
+npm run test
+
+# Unit тесты
+npm run test:unit
+
+# Integration тесты
+npm run test:integration
+
+# E2E тесты
+npm run test:e2e
+
+# Тесты с покрытием
+npm run test:coverage
+
+# Тесты с UI интерфейсом
+npm run test:ui
+
+# Тесты в watch режиме
+npm run test:watch
+```
+
+### **🔍 Качество кода:**
+
+```bash
+# ESLint проверка
+npm run lint
+
+# ESLint автоисправление
+npm run lint:fix
+
+# Prettier форматирование
+npm run format
+
+# Проверка форматирования
+npm run format:check
+
+# TypeScript проверка типов
+npm run typecheck
+
+# Полная проверка перед коммитом
+npm run precommit
+
+# CI проверка
+npm run ci
+```
+
+### **🐳 Docker:**
+
+```bash
+# Сборка Docker образа
+npm run docker:build
+
+# Оптимизированная сборка
+npm run docker:build:optimized
+
+# Запуск в Docker
+npm run docker:run
+
+# Production deploy
+npm run docker:run:prod
+
+# Остановка Docker контейнера
+npm run docker:stop
+
+# Логи Docker
+npm run docker:logs
+
+# Shell в Docker контейнере
+npm run docker:shell
+```
+
+### **🔧 Обслуживание:**
+
+```bash
+# Очистка временных файлов
+npm run clean
+
+# Полная очистка (включая node_modules)
+npm run clean:all
+
+# Проверка устаревших зависимостей
+npm run deps:check
+
+# Обновление зависимостей
+npm run deps:update
+
+# Аудит безопасности
+npm run security:audit
+
+# Исправление уязвимостей
+npm run security:fix
+```
+
+### **📊 Мониторинг:**
 
 ```bash
 # Health check
-curl http://192.168.1.196:3000/health
+npm run health:check
 
-# Chat with Claude
-curl -X POST http://192.168.1.196:3000/v1/chat/completions \
+# Prometheus метрики
+npm run metrics:prometheus
+
+# Производительность профилирование
+npm run performance:profile
+
+# Анализ производительности
+npm run performance:analyze
+
+# Бенчмарк
+npm run benchmark
+```
+
+---
+
+## 🧪 **ТЕСТИРОВАНИЕ ENDPOINTS**
+
+### **Health Check:**
+
+```bash
+# Простая проверка
+curl http://localhost:3000/health
+
+# С форматированием JSON
+curl -s http://localhost:3000/health | jq .
+
+# Сетевая проверка
+curl http://192.168.1.196:3000/health
+```
+
+### **Chat Completions:**
+
+```bash
+# Базовый запрос
+curl -X POST http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer dummy-key" \
   -d '{
     "model": "gpt-4",
-    "messages": [{"role": "user", "content": "Hello from network device!"}],
-    "max_tokens": 100
+    "messages": [{"role": "user", "content": "Привет! Как дела?"}]
+  }'
+
+# Streaming запрос
+curl -X POST http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dummy-key" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Расскажи историю"}],
+    "stream": true
+  }'
+
+# С ограничением токенов
+curl -X POST http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dummy-key" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Короткий ответ"}],
+    "max_tokens": 50
   }'
 ```
 
-### 3. **Management Commands:**
+### **Embeddings:**
 
 ```bash
-# Simple management
-./scripts/cynosure-local.sh status|start|stop|test
+# Векторные эмбеддинги
+curl -X POST http://localhost:3000/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dummy-key" \
+  -d '{
+    "model": "text-embedding-3-small",
+    "input": "Hello world"
+  }'
 
-# Advanced factory management
-./scripts/cynosure-factory-simple.sh status|start|stop|monitor
-
-# GitHub Actions runner setup
-./scripts/setup-runner.sh
+# Проверка размерности
+curl -X POST http://localhost:3000/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dummy-key" \
+  -d '{
+    "model": "text-embedding-3-small",
+    "input": "test"
+  }' | jq '.data[0].embedding | length'
 ```
 
-## 🌐 Network Proxy Usage
-
-Replace your OpenAI base URL with `http://192.168.1.196:3000/v1` in any existing application.
-
-**Quick Examples:**
-
-- **Python/JS/React**: See [Cookbook](cookbook/) for complete integration guides
-- **Docker**: Set `OPENAI_BASE_URL=http://192.168.1.196:3000/v1`
-- **Any OpenAI SDK**: Just change the base URL - that's it!
-
-## 🤖 GitHub Actions Integration
-
-### **Self-Hosted Runner** (Optional)
-
-Enable @claude comments in issues and PRs:
+### **Models:**
 
 ```bash
-# Setup self-hosted runner
-cd /Users/laptop/actions-runner
-./config.sh --url https://github.com/[username]/cynosure --token [TOKEN]
-nohup ./run.sh > runner.log 2>&1 &
+# Список всех моделей
+curl http://localhost:3000/v1/models
+
+# Количество моделей
+curl -s http://localhost:3000/v1/models | jq '.data | length'
+
+# Первые 3 модели
+curl -s http://localhost:3000/v1/models | jq '.data[0:3]'
 ```
 
-**Usage in Issues/PRs:**
+---
 
-```
-@claude Explain this code
-@claude Find bugs in this function
-@claude Create tests for this API
-```
+## 🔧 **КОНФИГУРАЦИЯ (.env)**
 
-## 🗺️ Model Mapping
-
-### **Chat Models** (Latest Versions)
-
-| OpenAI Model    | Claude Model                 | Performance  | Release Date | Context |
-| --------------- | ---------------------------- | ------------ | ------------ | ------- |
-| `gpt-4`         | `claude-3-5-sonnet-20241022` | Best Quality | Oct 2024     | 200K    |
-| `gpt-4-turbo`   | `claude-3-5-sonnet-20241022` | Balanced     | Oct 2024     | 200K    |
-| `gpt-3.5-turbo` | `claude-3-5-haiku-20241022`  | Fast         | Oct 2024     | 200K    |
-| `gpt-4o`        | `claude-3-5-sonnet-20241022` | Latest       | Oct 2024     | 200K    |
-| `gpt-4o-mini`   | `claude-3-5-haiku-20241022`  | Optimized    | Oct 2024     | 200K    |
-
-### **Embedding Models**
-
-| OpenAI Embedding Model   | Claude Alternative           | Dimensions | Performance  |
-| ------------------------ | ---------------------------- | ---------- | ------------ |
-| `text-embedding-3-small` | `claude-3-5-sonnet-20241022` | 1536       | Fast         |
-| `text-embedding-3-large` | `claude-3-5-sonnet-20241022` | 3072       | High Quality |
-| `text-embedding-ada-002` | `claude-3-5-haiku-20241022`  | 1536       | Compatible   |
-
-### **Popular Model Combinations**
-
-**OpenAI Ecosystem:**
-
-- `gpt-4o` + `text-embedding-3-large` (Latest & Best)
-- `gpt-4-turbo` + `text-embedding-3-small` (Balanced)
-- `gpt-3.5-turbo` + `text-embedding-ada-002` (Fast & Compatible)
-
-**Anthropic Ecosystem:**
-
-- `claude-3-5-sonnet-20241022` (Latest Sonnet)
-- `claude-3-5-haiku-20241022` (Latest Haiku)
-- `claude-3-opus-20240229` (Maximum Performance)
-
-## 📊 API Endpoints
-
-### **Core Endpoints**
-
-- `GET /health` - Health check and service status
-- `GET /v1/models` - Available models list
-- `POST /v1/chat/completions` - Main chat endpoint (with streaming)
-- `POST /v1/embeddings` - Vector embeddings endpoint (OpenAI compatible)
-
-### **Vector Embeddings Usage**
-
-Full OpenAI API compatibility for vector embeddings. See [Cookbook](cookbook/) for detailed examples.
-
-### **Network Access Points**
-
-- **Local**: `http://localhost:3000/*`
-- **Network**: `http://192.168.1.196:3000/*`
-- **Documentation**: `http://localhost:3000/docs` (development)
-
-## 🏭 Management & Monitoring
-
-### **Service Management**
+### **Обязательные настройки:**
 
 ```bash
-# Check status
-./scripts/cynosure-local.sh status
+# Порт сервера
+PORT=3000
 
-# Start/stop/restart
-./scripts/cynosure-local.sh start|stop|restart
+# Хост (0.0.0.0 для сетевого доступа)
+HOST=0.0.0.0
 
-# Test API functionality
-./scripts/cynosure-local.sh test
+# Режим работы
+NODE_ENV=production
 
-# Advanced factory with monitoring
-./scripts/cynosure-factory-simple.sh monitor
+# Путь к Claude CLI (ВАЖНО!)
+CLAUDE_PATH=/Users/laptop/.claude/local/claude
+
+# Рабочая директория
+WORKING_DIRECTORY=/Users/laptop/dev/cynosure
+
+# Настройки Claude
+MAX_TURNS=5
+TIMEOUT=60000
 ```
 
-### **Real-time Monitoring**
-
-- **Health checks**: Automatic service health monitoring
-- **Performance metrics**: Request/response times, memory usage
-- **Auto-restart**: Automatic restart on failures
-- **Logging**: Comprehensive request and error logging
-
-## 🔒 Security & Configuration
-
-### **Network Security**
-
-- **CORS configured** for cross-origin requests
-- **Local network only** - not exposed to internet
-- **No API keys required** - uses local Claude MAX subscription
-- **Request logging** for audit trails
-
-### **Optional Production Security**
+### **Опциональные настройки:**
 
 ```bash
-# Restrict CORS origins
-export CORS_ORIGINS="https://myapp.com,http://192.168.1.0/24"
+# API ключ Anthropic (не нужен для MAX подписки)
+ANTHROPIC_API_KEY=optional
 
-# Add API key authentication
-export PROXY_API_KEYS="team-key-1,mobile-key-2"
+# CORS настройки
+CORS_ORIGINS=*
+
+# Аутентификация (опционально)
+PROXY_API_KEYS=key1,key2
 
 # Rate limiting
-export RATE_LIMIT_PER_MINUTE=100
+RATE_LIMIT_PER_MINUTE=100
+
+# Логирование
+LOG_LEVEL=info
+
+# Redis (для кэширования)
+REDIS_URL=redis://localhost:6379
 ```
 
-### **Environment Configuration**
-
-| Variable            | Description        | Default       | Network Ready |
-| ------------------- | ------------------ | ------------- | ------------- |
-| `PORT`              | Server port        | `3000`        | ✅            |
-| `HOST`              | Server host        | `0.0.0.0`     | ✅            |
-| `NODE_ENV`          | Environment        | `development` | ✅            |
-| `WORKING_DIRECTORY` | Claude workspace   | `cwd()`       | ✅            |
-| `MAX_TURNS`         | Conversation turns | `5`           | ✅            |
-
-## 🐳 Docker Deployment
-
-### **Production Deployment**
+### **Создание .env файла:**
 
 ```bash
-# Already configured for network access
-docker-compose up -d
+# Автоматическое создание из примера
+cp .env.example .env
 
-# Manual build and run
-docker build -t cynosure:latest .
-docker run -d --name cynosure -p 3000:3000 cynosure:latest
+# Или создание вручную
+cat > .env << 'EOF'
+PORT=3000
+HOST=0.0.0.0
+NODE_ENV=production
+CLAUDE_PATH=/Users/laptop/.claude/local/claude
+WORKING_DIRECTORY=/Users/laptop/dev/cynosure
+MAX_TURNS=5
+TIMEOUT=60000
+EOF
 ```
 
-### **Network-Ready Compose**
+---
 
-```yaml
-version: '3.8'
-services:
-  cynosure:
-    build: .
-    ports:
-      - '3000:3000' # External network access
-    environment:
-      - HOST=0.0.0.0 # Accept external connections
-      - NODE_ENV=production
-    restart: unless-stopped
-    networks:
-      - bridge
+## 🚨 **УСТРАНЕНИЕ ПРОБЛЕМ**
+
+### **1. Порт занят:**
+
+```bash
+# Проверить что на порту 3000
+lsof -ti:3000
+
+# Убить процесс на порту 3000
+lsof -ti:3000 | xargs kill -9
+
+# Или использовать скрипт (автоматически)
+./scripts/cynosure-local.sh restart
 ```
 
-## ⚡ Performance & Benefits
+### **2. Claude CLI не найден:**
 
-### **Performance Comparison**
+```bash
+# Проверить алиас Claude
+which claude
 
-- **Local Connection**: ~5.4 seconds average response
-- **Network Connection**: ~5.6 seconds average response
-- **vs Tunnel Solutions**: **22% faster** than ngrok-based approaches
+# Проверить файл напрямую
+ls -la /Users/laptop/.claude/local/claude
 
-### **Economic Benefits**
+# Проверить права на выполнение
+chmod +x /Users/laptop/.claude/local/claude
 
-- **Single Claude MAX** subscription ($20/month) vs multiple API keys
-- **No bandwidth limits** unlike tunnel services
-- **No external dependencies** - fully self-contained
+# Тест Claude CLI
+echo "Привет" | /Users/laptop/.claude/local/claude -p
+```
 
-### **Technical Benefits**
+### **3. Проблемы с сборкой:**
 
-- **Zero configuration** for network clients
-- **Full OpenAI SDK compatibility** - no code changes needed
-- **Streaming support** for real-time responses
-- **Auto-restart** capabilities for high availability
+```bash
+# Полная очистка и пересборка
+npm run clean:all
+npm install
+npm run build
 
-## 📚 Documentation
+# Проверка TypeScript
+npm run typecheck
 
-### **Complete Guides**
+# Проверка зависимостей
+npm run deps:check
+npm audit
+```
 
-- [📖 Network Proxy Setup](docs/NETWORK_PROXY_SETUP.md)
-- [🔧 Self-Hosted Runner Guide](docs/SELF_HOSTED_SETUP.md)
-- [💻 Client Examples](docs/PROXY_CLIENT_EXAMPLES.md) (Python, JS, React, Mobile)
-- [🚀 Local Deployment](docs/LOCAL_DEPLOYMENT_COMPLETE.md)
-- [🔄 Migration Guide](docs/MIGRATION_PLAN.md)
+### **4. Проблемы с зависимостями:**
 
-### **Advanced Topics**
+```bash
+# Переустановка зависимостей
+rm -rf node_modules package-lock.json
+npm install
 
-- [🔍 Tunnel vs Local Comparison](docs/TUNNEL_VS_LOCAL.md)
-- [🛠️ Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- [📊 API Reference](docs/API.md)
+# Исправление уязвимостей
+npm audit fix
 
-## 🔮 Upcoming Features
+# Обновление устаревших пакетов
+npm update
+```
 
-### **WebSocket Support** (Architecture Complete)
+### **5. Полный ремонт:**
+
+```bash
+# Автоматический ремонт
+./scripts/quick-commands.sh fix
+
+# Или вручную:
+cd /Users/laptop/dev/cynosure
+./scripts/cynosure-local.sh stop
+npm run clean:all
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+./scripts/cynosure-local.sh start
+```
+
+---
+
+## 🔗 **INTEGRATION С OPENAI SDK**
+
+### **JavaScript/TypeScript:**
 
 ```javascript
-// WebSocket API (implementation ready)
-const ws = new WebSocket('ws://192.168.1.196:3000/v1/ws/chat');
-ws.send(
-  JSON.stringify({
-    model: 'gpt-4',
-    messages: [{ role: 'user', content: 'Real-time chat!' }],
-    stream: true,
-  })
-);
+import OpenAI from 'openai';
 
-// Receive streaming responses
-ws.onmessage = event => {
-  const data = JSON.parse(event.data);
-  console.log('Claude response:', data);
-};
+const openai = new OpenAI({
+  baseURL: 'http://localhost:3000/v1',
+  apiKey: 'dummy-key', // Любой ключ
+});
+
+// Chat
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Привет!' }],
+});
+
+// Streaming
+const stream = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Расскажи историю' }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || '');
+}
+
+// Embeddings
+const embeddings = await openai.embeddings.create({
+  model: 'text-embedding-3-small',
+  input: 'Hello world',
+});
 ```
 
-**Benefits**: 30% lower latency, bidirectional communication, typing indicators, persistent connections
+### **Python:**
 
-### **Advanced Features** (Documented & Ready)
+```python
+import openai
 
-- **📊 Web Dashboard** - Service monitoring and management UI with real-time metrics
-- **⚙️ Function Calling** - Full OpenAI tools/functions compatibility with universal interface
-- **🚄 Caching Layer** - Redis-based response caching with intelligent invalidation
-- **📋 Structured Output** - Schema-based JSON responses with validation
-- **🔄 Provider Routing** - Intelligent routing between multiple AI providers with fallback
-- **📈 Advanced Analytics** - Request patterns, model usage, performance metrics
+# Настройка клиента
+openai.base_url = "http://localhost:3000/v1"
+openai.api_key = "dummy-key"
 
-## 🤝 Contributing & Support
+# Chat
+response = openai.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Привет!"}]
+)
+print(response.choices[0].message.content)
 
-### **Contributing**
+# Streaming
+stream = openai.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Расскажи историю"}],
+    stream=True
+)
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Create Pull Request
+for chunk in stream:
+    content = chunk.choices[0].delta.content
+    if content:
+        print(content, end='')
 
-### **Support & Community**
+# Embeddings
+embeddings = openai.embeddings.create(
+    model="text-embedding-3-small",
+    input="Hello world"
+)
+print(f"Размерность: {len(embeddings.data[0].embedding)}")
+```
 
-- **GitHub Issues**: [Report bugs and request features](https://github.com/eagurin/cynosure/issues)
-- **Discussions**: [Community support and ideas](https://github.com/eagurin/cynosure/discussions)
+### **React/Next.js:**
 
-## 📜 License
+```javascript
+// components/ChatComponent.jsx
+import { useState } from 'react';
 
-MIT License - see [LICENSE](LICENSE) file for details.
+const OPENAI_CONFIG = {
+  baseURL: 'http://localhost:3000/v1',
+  apiKey: 'dummy-key',
+};
+
+export default function ChatComponent() {
+  const [message, setMessage] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${OPENAI_CONFIG.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OPENAI_CONFIG.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [{ role: 'user', content: message }],
+        }),
+      });
+
+      const data = await res.json();
+      setResponse(data.choices[0].message.content);
+    } catch (error) {
+      console.error('Ошибка:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder="Введите сообщение..."
+      />
+      <button onClick={sendMessage} disabled={loading}>
+        {loading ? 'Отправка...' : 'Отправить'}
+      </button>
+      {response && <div>Ответ: {response}</div>}
+    </div>
+  );
+}
+```
 
 ---
 
-## 🎯 **Ready to Use Now!**
+## 🎯 **ГОТОВЫЕ КОМАНДЫ COPY-PASTE**
 
-**Cynosure Bridge is production-ready and available on your network:**
+### **Полный перезапуск проекта:**
 
-- 🌐 **Network URL**: `http://192.168.1.196:3000/v1`
-- 🏠 **Local URL**: `http://localhost:3000/v1`
-- 🔧 **Management**: `./scripts/cynosure-local.sh status`
-- 📱 **Client Examples**: See `docs/PROXY_CLIENT_EXAMPLES.md`
+```bash
+cd /Users/laptop/dev/cynosure && ./scripts/cynosure-local.sh restart
+```
 
-**Just replace your OpenAI base URL and start using Claude MAX through the proxy!** 🚀
+### **Быстрая проверка всего:**
+
+```bash
+cd /Users/laptop/dev/cynosure && ./scripts/quick-commands.sh test
+```
+
+### **Мониторинг статуса в реальном времени:**
+
+```bash
+watch -n 2 'curl -s http://localhost:3000/health | jq .'
+```
+
+### **Логи в реальном времени:**
+
+```bash
+tail -f /Users/laptop/dev/cynosure/.local/cynosure.log
+```
+
+### **Полная диагностика:**
+
+```bash
+cd /Users/laptop/dev/cynosure && \
+echo "=== СТАТУС СЕРВЕРА ===" && \
+./scripts/cynosure-local.sh status && \
+echo -e "\n=== ТЕСТ API ===" && \
+./scripts/cynosure-local.sh test && \
+echo -e "\n=== HEALTH CHECK ===" && \
+curl -s http://localhost:3000/health | jq .
+```
+
+### **Быстрое исправление всех проблем:**
+
+```bash
+cd /Users/laptop/dev/cynosure && ./scripts/quick-commands.sh fix
+```
 
 ---
 
-**Cynosure** - From Greek κυνοσουρίς (kynosouris), "dog's tail", referring to the constellation Ursa Minor and the North Star - a guiding point for navigation. Like the North Star guides travelers, Cynosure Bridge guides your AI requests to the best solution. ⭐
+## 🔍 **ДИАГНОСТИКА И МОНИТОРИНГ**
+
+### **Проверка всех компонентов:**
+
+```bash
+# Проверка Node.js
+node --version
+
+# Проверка npm
+npm --version
+
+# Проверка Claude CLI
+/Users/laptop/.claude/local/claude --version
+
+# Проверка директории проекта
+ls -la /Users/laptop/dev/cynosure/
+
+# Проверка сборки
+ls -la /Users/laptop/dev/cynosure/dist/
+
+# Проверка процессов на порту 3000
+lsof -ti:3000
+
+# Проверка сетевого доступа
+curl -s http://192.168.1.196:3000/health
+```
+
+### **Мониторинг производительности:**
+
+```bash
+# CPU и память
+top -pid $(cat /Users/laptop/dev/cynosure/.local/cynosure.pid)
+
+# Сетевые соединения
+netstat -an | grep 3000
+
+# Дисковое пространство
+df -h
+
+# Логи размер
+ls -lh /Users/laptop/dev/cynosure/.local/cynosure.log
+```
+
+### **Автоматические проверки:**
+
+```bash
+# Создание скрипта мониторинга
+cat > /Users/laptop/dev/cynosure/monitor.sh << 'EOF'
+#!/bin/bash
+while true; do
+  echo "=== $(date) ==="
+  curl -s http://localhost:3000/health | jq '.status' || echo "OFFLINE"
+  sleep 30
+done
+EOF
+
+chmod +x /Users/laptop/dev/cynosure/monitor.sh
+# Запуск: ./monitor.sh
+```
+
+---
+
+## 📚 **ФАЙЛОВАЯ СТРУКТУРА**
+
+```
+/Users/laptop/dev/cynosure/
+├── 🚀 src/                          # Исходный код TypeScript
+│   ├── claude/
+│   │   ├── api-client.ts           # ✅ Интеграция с Claude CLI
+│   │   └── client.ts               # Claude Code SDK
+│   ├── server/
+│   │   └── routes.ts               # HTTP маршруты Fastify
+│   ├── translation/
+│   │   ├── claude-to-openai.ts     # Трансляция ответов
+│   │   └── openai-to-claude.ts     # Трансляция запросов
+│   ├── models/
+│   │   ├── claude.ts               # TypeScript типы Claude
+│   │   └── openai.ts               # TypeScript типы OpenAI
+│   ├── utils/
+│   │   └── helpers.ts              # Утилиты и хелперы
+│   └── index.ts                    # Главный файл сервера
+├── 📜 scripts/                      # Скрипты автоматизации
+│   ├── cynosure-local.sh           # ✅ Основное управление
+│   ├── all-in-one-setup.sh         # ✅ Автоустановка
+│   ├── quick-commands.sh            # ✅ Быстрые команды
+│   └── benchmark.js                # Тестирование производительности
+├── 🧪 tests/                        # Тестирование
+│   ├── unit/                       # Unit тесты
+│   ├── integration/                # Integration тесты
+│   └── e2e/                        # End-to-end тесты
+├── 📋 docs/                         # Документация
+│   └── AUTOMATION_GUIDE.md         # ✅ Руководство автономности
+├── 🔧 config/                       # Конфигурация
+│   ├── models.json                 # Маппинг моделей
+│   └── mcp.json                    # MCP конфигурация
+├── 🐳 docker/                       # Docker конфигурация
+├── 📁 .local/                       # Локальные данные
+│   ├── cynosure.pid                # PID файл сервера
+│   └── cynosure.log                # Логи сервера
+├── 📄 package.json                  # ✅ 58 npm скриптов
+├── 📄 .env                          # ✅ Переменные окружения
+├── 📄 CLAUDE.md                     # ✅ Конфигурация проекта
+└── 📄 README.md                     # ✅ Это руководство
+```
+
+---
+
+## 🎯 **ИТОГОВЫЙ ЧЕКЛИСТ**
+
+### ✅ **Готово к использованию:**
+
+- [x] **Автоматическая установка** - `./scripts/all-in-one-setup.sh`
+- [x] **Управление сервером** - `./scripts/cynosure-local.sh start|stop|restart|status|test`
+- [x] **Быстрые команды** - `./scripts/quick-commands.sh start|test|fix`
+- [x] **58 NPM скриптов** - для всех задач разработки
+- [x] **Полное тестирование** - Health, Chat, Embeddings, Models
+- [x] **OpenAI SDK интеграция** - JavaScript, Python, React примеры
+- [x] **Troubleshooting** - решения всех проблем
+- [x] **Мониторинг** - логи, статус, производительность
+- [x] **Сетевой доступ** - http://192.168.1.196:3000
+- [x] **Документация** - полное руководство автономности
+
+### 🚀 **Команды для быстрого старта:**
+
+```bash
+# 1. Полная установка
+cd /Users/laptop/dev/cynosure && ./scripts/all-in-one-setup.sh
+
+# 2. Запуск сервера
+./scripts/cynosure-local.sh start
+
+# 3. Тестирование
+./scripts/cynosure-local.sh test
+
+# 4. Статус
+./scripts/cynosure-local.sh status
+```
+
+---
+
+## 🎊 **CYNOSURE ГОТОВ К ПОЛНОСТЬЮ АВТОНОМНОЙ РАБОТЕ!**
+
+**Теперь вы можете:**
+
+- ✅ Запускать и управлять сервером без AI помощи
+- ✅ Диагностировать и исправлять проблемы самостоятельно
+- ✅ Интегрировать с любыми OpenAI-совместимыми приложениями
+- ✅ Мониторить производительность и статус
+- ✅ Масштабировать для команды через сетевой доступ
+
+**Все инструменты и документация готовы для независимого использования!** 🚀
+
+---
+
+**Cynosure** - От греческого κυνοσουρίς (kynosouris), "собачий хвост", обозначающий созвездие Малая Медведица и Полярную звезду - путеводную точку для навигации. Как Полярная звезда направляет путешественников, Cynosure Bridge направляет ваши AI запросы к лучшему решению. ⭐
