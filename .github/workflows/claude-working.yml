@@ -41,9 +41,10 @@ jobs:
       - name: Start Cynosure Bridge
         run: |
           echo "🚀 Запускаем Cynosure Bridge как OpenAI-совместимый сервер..."
+          echo "🔑 Используем ANTHROPIC_API_KEY из секретов для прямого API доступа"
           
-          # Запускаем в фоне
-          PORT=3000 npm start &
+          # Запускаем в фоне с API ключом
+          PORT=3000 ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" npm start &
           PROXY_PID=$!
           echo "PROXY_PID=$PROXY_PID" >> $GITHUB_ENV
           
