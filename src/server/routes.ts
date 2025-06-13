@@ -10,7 +10,13 @@ import {
   OpenAIChatCompletionChunk,
 } from '../models/openai.js';
 import { ClaudeApiClient } from '../claude/api-client.js';
-import { formatSSE, createOpenAIError, sanitizeModelName, mapModelToClaud, EMBEDDING_MODELS } from '../utils/helpers.js';
+import {
+  formatSSE,
+  createOpenAIError,
+  sanitizeModelName,
+  mapModelToClaud,
+  EMBEDDING_MODELS,
+} from '../utils/helpers.js';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check endpoint
@@ -51,7 +57,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
         },
         {
           id: 'gpt-4-turbo',
-          object: 'model', 
+          object: 'model',
           created: 1686935002,
           owned_by: 'cynosure',
           description: 'Maps to claude-3-5-sonnet-20241022',
@@ -201,52 +207,60 @@ export async function registerRoutes(fastify: FastifyInstance) {
   );
 
   // Embeddings endpoint (synthetic implementation)
-  fastify.post('/v1/embeddings', async (request: FastifyRequest<{ Body: any }>, reply: FastifyReply) => {
-    try {
-      const { input, model = 'text-embedding-3-small' } = request.body as any;
-      
-      if (!input) {
-        reply.code(400);
-        return createOpenAIError('Missing required field: input');
-      }
+  interface EmbeddingsBody {
+    input: string | string[];
+    model?: string;
+  }
 
-      // Get dimensions from configuration
-      const dimensions = EMBEDDING_MODELS[model] || 1536;
-      
-      // Generate synthetic embeddings (deterministic hash-based)
-      const texts = Array.isArray(input) ? input : [input];
-      const embeddings = texts.map((text: string, index: number) => {
-        // Simple hash-based synthetic embedding
-        const vector = new Array(dimensions).fill(0).map((_, i) => {
-          const hash = simpleHash(text + i.toString());
-          return (hash % 2000 - 1000) / 1000; // Normalize to [-1, 1]
+  fastify.post(
+    '/v1/embeddings',
+    async (request: FastifyRequest<{ Body: EmbeddingsBody }>, reply: FastifyReply) => {
+      try {
+        const { input, model = 'text-embedding-3-small' } = request.body;
+
+        if (!input) {
+          reply.code(400);
+          return createOpenAIError('Missing required field: input');
+        }
+
+        // Get dimensions from configuration
+        const dimensions = EMBEDDING_MODELS[model] || 1536;
+
+        // Generate synthetic embeddings (deterministic hash-based)
+        const texts = Array.isArray(input) ? input : [input];
+        const embeddings = texts.map((text: string, index: number) => {
+          // Simple hash-based synthetic embedding
+          const vector = new Array(dimensions).fill(0).map((_, i) => {
+            const hash = simpleHash(text + i.toString());
+            return ((hash % 2000) - 1000) / 1000; // Normalize to [-1, 1]
+          });
+
+          return {
+            object: 'embedding',
+            embedding: vector,
+            index: index,
+          };
         });
-        
-        return {
-          object: 'embedding',
-          embedding: vector,
-          index: index,
-        };
-      });
 
-      return {
-        object: 'list',
-        data: embeddings,
-        model: model,
-        usage: {
-          prompt_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
-          total_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
-        },
-      };
-    } catch (error) {
-      fastify.log.error('Error in embeddings:', error);
-      reply.code(500);
-      return createOpenAIError(
-        error instanceof Error ? error.message : 'Internal server error',
-        'internal_error'
-      );
+        return {
+          object: 'list',
+          data: embeddings,
+          model: model,
+          usage: {
+            prompt_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
+            total_tokens: texts.reduce((acc: number, text: string) => acc + text.length / 4, 0),
+          },
+        };
+      } catch (error) {
+        fastify.log.error('Error in embeddings:', error);
+        reply.code(500);
+        return createOpenAIError(
+          error instanceof Error ? error.message : 'Internal server error',
+          'internal_error'
+        );
+      }
     }
-  });
+  );
 
   // Metrics endpoint for monitoring
   fastify.get('/metrics', async (_request, _reply) => {
@@ -344,7 +358,7 @@ function simpleHash(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);

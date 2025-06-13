@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  generateId, 
-  estimateTokenCount, 
+import {
+  generateId,
+  estimateTokenCount,
   formatSSE,
   createOpenAIError,
   sanitizeModelName,
@@ -12,7 +12,7 @@ import {
   isValidJSON,
   deepMerge,
   throttle,
-  debounce
+  debounce,
 } from '../../src/utils/helpers.js';
 
 describe('Helpers Unit Tests', () => {
@@ -34,7 +34,7 @@ describe('Helpers Unit Tests', () => {
     it('should generate IDs of consistent format', () => {
       const id1 = generateId('test');
       const id2 = generateId('test');
-      
+
       // IDs should have same format but different values
       expect(id1).toMatch(/^test-[a-zA-Z0-9]+$/);
       expect(id2).toMatch(/^test-[a-zA-Z0-9]+$/);
@@ -58,7 +58,7 @@ describe('Helpers Unit Tests', () => {
     it('should estimate more tokens for longer text', () => {
       const shortCount = estimateTokenCount('Hi');
       const longCount = estimateTokenCount('This is a much longer sentence with many more words');
-      
+
       expect(longCount).toBeGreaterThan(shortCount);
     });
   });
@@ -67,7 +67,7 @@ describe('Helpers Unit Tests', () => {
     it('should format SSE data correctly', () => {
       const data = { message: 'test' };
       const result = formatSSE(data);
-      
+
       expect(result).toContain('data: {"message":"test"}');
       expect(result).toMatch(/\n$/);
     });
@@ -75,7 +75,7 @@ describe('Helpers Unit Tests', () => {
     it('should include event type when provided', () => {
       const data = { message: 'test' };
       const result = formatSSE(data, 'completion');
-      
+
       expect(result).toContain('event: completion');
       expect(result).toContain('data: {"message":"test"}');
     });
@@ -89,27 +89,27 @@ describe('Helpers Unit Tests', () => {
   describe('createOpenAIError', () => {
     it('should create error object with message', () => {
       const error = createOpenAIError('Test error');
-      
+
       expect(error).toEqual({
         error: {
           message: 'Test error',
           type: 'invalid_request_error',
           param: undefined,
-          code: undefined
-        }
+          code: undefined,
+        },
       });
     });
 
     it('should include custom type and parameters', () => {
       const error = createOpenAIError('Custom error', 'custom_type', 'param1', 'code1');
-      
+
       expect(error).toEqual({
         error: {
           message: 'Custom error',
           type: 'custom_type',
           param: 'param1',
-          code: 'code1'
-        }
+          code: 'code1',
+        },
       });
     });
   });
@@ -191,8 +191,8 @@ describe('Helpers Unit Tests', () => {
 
     it('should return fallback for invalid string input', () => {
       const fallback = { default: true };
-      expect(safeJsonParse('null' as any, fallback)).toBe(null); // Valid JSON
-      expect(safeJsonParse('invalid' as any, fallback)).toBe(fallback);
+      expect(safeJsonParse('null' as unknown as object, fallback)).toBe(null); // Valid JSON
+      expect(safeJsonParse('invalid' as unknown as object, fallback)).toBe(fallback);
     });
   });
 
@@ -220,7 +220,7 @@ describe('Helpers Unit Tests', () => {
       const target = { a: 1, b: 2 };
       const source = { b: 3, c: 4 };
       const result = deepMerge(target, source);
-      
+
       expect(result).toEqual({ a: 1, b: 3, c: 4 });
     });
 
@@ -228,11 +228,11 @@ describe('Helpers Unit Tests', () => {
       const target = { a: { x: 1, y: 2 }, b: 1 };
       const source = { a: { y: 3, z: 4 }, c: 2 };
       const result = deepMerge(target, source);
-      
-      expect(result).toEqual({ 
-        a: { x: 1, y: 3, z: 4 }, 
-        b: 1, 
-        c: 2 
+
+      expect(result).toEqual({
+        a: { x: 1, y: 3, z: 4 },
+        b: 1,
+        c: 2,
       });
     });
 
@@ -240,7 +240,7 @@ describe('Helpers Unit Tests', () => {
       const target = { arr: [1, 2, 3] };
       const source = { arr: [4, 5] };
       const result = deepMerge(target, source);
-      
+
       expect(result).toEqual({ arr: [4, 5] });
     });
 
@@ -248,7 +248,7 @@ describe('Helpers Unit Tests', () => {
       const target = { a: 1 };
       const source = { b: 2 };
       const result = deepMerge(target, source);
-      
+
       expect(target).toEqual({ a: 1 });
       expect(source).toEqual({ b: 2 });
       expect(result).toEqual({ a: 1, b: 2 });
@@ -256,16 +256,16 @@ describe('Helpers Unit Tests', () => {
   });
 
   describe('throttle', () => {
-    it('should throttle function calls', (done) => {
+    it('should throttle function calls', done => {
       let callCount = 0;
       const throttled = throttle(() => callCount++, 100);
-      
+
       throttled();
       throttled();
       throttled();
-      
+
       expect(callCount).toBe(1);
-      
+
       setTimeout(() => {
         throttled();
         expect(callCount).toBe(2);
@@ -277,45 +277,45 @@ describe('Helpers Unit Tests', () => {
       let result: number;
       const obj = {
         value: 42,
-        getValue: throttle(function(this: any) { 
-          result = this.value; 
-          return this.value; 
-        }, 50)
+        getValue: throttle(function (this: { value: number }) {
+          result = this.value;
+          return this.value;
+        }, 50),
       };
-      
+
       obj.getValue();
-      expect(result!).toBe(42);
+      expect(result).toBe(42);
     });
   });
 
   describe('debounce', () => {
-    it('should debounce function calls', (done) => {
+    it('should debounce function calls', done => {
       let callCount = 0;
       const debounced = debounce(() => callCount++, 100);
-      
+
       debounced();
       debounced();
       debounced();
-      
+
       expect(callCount).toBe(0);
-      
+
       setTimeout(() => {
         expect(callCount).toBe(1);
         done();
       }, 150);
     });
 
-    it('should reset timer on subsequent calls', (done) => {
+    it('should reset timer on subsequent calls', done => {
       let callCount = 0;
       const debounced = debounce(() => callCount++, 100);
-      
+
       debounced();
-      
+
       setTimeout(() => {
         debounced(); // This should reset the timer
         expect(callCount).toBe(0);
       }, 50);
-      
+
       setTimeout(() => {
         expect(callCount).toBe(1);
         done();

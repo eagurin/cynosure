@@ -20,7 +20,7 @@ describe('API E2E Tests', () => {
     it('should return health status', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/health'
+        url: '/health',
       });
 
       expect(response.statusCode).toBe(200);
@@ -28,7 +28,7 @@ describe('API E2E Tests', () => {
       expect(body).toMatchObject({
         status: 'ok',
         service: 'cynosure-bridge',
-        claude_code_available: true
+        claude_code_available: true,
       });
       expect(body).toHaveProperty('uptime');
       expect(body).toHaveProperty('timestamp');
@@ -40,19 +40,19 @@ describe('API E2E Tests', () => {
     it('should return list of available models', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/v1/models'
+        url: '/v1/models',
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
       expect(body).toMatchObject({
-        object: 'list'
+        object: 'list',
       });
       expect(body.data).toBeInstanceOf(Array);
       expect(body.data.length).toBeGreaterThan(0);
-      
+
       // Check for required chat models
-      const modelIds = body.data.map((model: any) => model.id);
+      const modelIds = body.data.map((model: { id: string }) => model.id);
       expect(modelIds).toContain('gpt-4');
       expect(modelIds).toContain('gpt-3.5-turbo');
       expect(modelIds).toContain('text-embedding-3-small');
@@ -61,11 +61,13 @@ describe('API E2E Tests', () => {
     it('should include model descriptions', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/v1/models'
+        url: '/v1/models',
       });
 
       const body = JSON.parse(response.body);
-      const gpt4Model = body.data.find((model: any) => model.id === 'gpt-4');
+      const gpt4Model = body.data.find(
+        (model: { id: string; description?: string }) => model.id === 'gpt-4'
+      );
       expect(gpt4Model).toHaveProperty('description');
       expect(gpt4Model.description).toContain('claude-3-5-sonnet');
     });
@@ -74,9 +76,7 @@ describe('API E2E Tests', () => {
   describe('Chat Completions Endpoint', () => {
     const validChatRequest = {
       model: 'gpt-4',
-      messages: [
-        { role: 'user', content: 'Hello, how are you?' }
-      ]
+      messages: [{ role: 'user', content: 'Hello, how are you?' }],
     };
 
     it('should reject requests without model', async () => {
@@ -84,8 +84,8 @@ describe('API E2E Tests', () => {
         method: 'POST',
         url: '/v1/chat/completions',
         payload: {
-          messages: [{ role: 'user', content: 'test' }]
-        }
+          messages: [{ role: 'user', content: 'test' }],
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -99,8 +99,8 @@ describe('API E2E Tests', () => {
         method: 'POST',
         url: '/v1/chat/completions',
         payload: {
-          model: 'gpt-4'
-        }
+          model: 'gpt-4',
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -115,8 +115,8 @@ describe('API E2E Tests', () => {
         url: '/v1/chat/completions',
         payload: {
           model: 'gpt-4',
-          messages: []
-        }
+          messages: [],
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -132,10 +132,8 @@ describe('API E2E Tests', () => {
         url: '/v1/chat/completions',
         payload: {
           model: 'gpt-4',
-          messages: [
-            { role: 'invalid_role', content: 'test' }
-          ]
-        }
+          messages: [{ role: 'invalid_role', content: 'test' }],
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -145,12 +143,12 @@ describe('API E2E Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/v1/chat/completions',
-        payload: validChatRequest
+        payload: validChatRequest,
       });
 
       // Should accept valid request, may succeed or fail depending on Claude CLI availability
       expect([200, 500]).toContain(response.statusCode);
-      
+
       const body = JSON.parse(response.body);
       if (response.statusCode === 200) {
         expect(body).toHaveProperty('choices');
@@ -165,8 +163,8 @@ describe('API E2E Tests', () => {
         url: '/v1/chat/completions',
         payload: {
           ...validChatRequest,
-          stream: true
-        }
+          stream: true,
+        },
       });
 
       // Should return 200 for streaming but fail due to Claude CLI
@@ -182,8 +180,8 @@ describe('API E2E Tests', () => {
           ...validChatRequest,
           temperature: 0.7,
           max_tokens: 100,
-          top_p: 0.9
-        }
+          top_p: 0.9,
+        },
       });
 
       expect([200, 500]).toContain(response.statusCode);
@@ -196,8 +194,8 @@ describe('API E2E Tests', () => {
         method: 'POST',
         url: '/v1/embeddings',
         payload: {
-          model: 'text-embedding-3-small'
-        }
+          model: 'text-embedding-3-small',
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -212,21 +210,21 @@ describe('API E2E Tests', () => {
         url: '/v1/embeddings',
         payload: {
           input: 'Hello world',
-          model: 'text-embedding-3-small'
-        }
+          model: 'text-embedding-3-small',
+        },
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body).toMatchObject({
         object: 'list',
-        model: 'text-embedding-3-small'
+        model: 'text-embedding-3-small',
       });
       expect(body.data).toHaveLength(1);
       expect(body.data[0]).toMatchObject({
         object: 'embedding',
-        index: 0
+        index: 0,
       });
       expect(body.data[0].embedding).toHaveLength(1536);
       expect(body.usage).toHaveProperty('prompt_tokens');
@@ -239,13 +237,13 @@ describe('API E2E Tests', () => {
         url: '/v1/embeddings',
         payload: {
           input: ['Hello world', 'Goodbye world'],
-          model: 'text-embedding-3-small'
-        }
+          model: 'text-embedding-3-small',
+        },
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body.data).toHaveLength(2);
       expect(body.data[0].index).toBe(0);
       expect(body.data[1].index).toBe(1);
@@ -257,13 +255,13 @@ describe('API E2E Tests', () => {
         url: '/v1/embeddings',
         payload: {
           input: 'Test text',
-          model: 'text-embedding-3-large'
-        }
+          model: 'text-embedding-3-large',
+        },
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body.model).toBe('text-embedding-3-large');
       expect(body.data[0].embedding).toHaveLength(3072);
     });
@@ -273,38 +271,38 @@ describe('API E2E Tests', () => {
         method: 'POST',
         url: '/v1/embeddings',
         payload: {
-          input: 'Test text'
-        }
+          input: 'Test text',
+        },
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body.model).toBe('text-embedding-3-small');
       expect(body.data[0].embedding).toHaveLength(1536);
     });
 
     it('should generate deterministic embeddings', async () => {
       const input = 'Consistent test text';
-      
+
       const response1 = await app.inject({
         method: 'POST',
         url: '/v1/embeddings',
-        payload: { input }
+        payload: { input },
       });
 
       const response2 = await app.inject({
         method: 'POST',
         url: '/v1/embeddings',
-        payload: { input }
+        payload: { input },
       });
 
       expect(response1.statusCode).toBe(200);
       expect(response2.statusCode).toBe(200);
-      
+
       const body1 = JSON.parse(response1.body);
       const body2 = JSON.parse(response2.body);
-      
+
       expect(body1.data[0].embedding).toEqual(body2.data[0].embedding);
     });
   });
@@ -313,14 +311,14 @@ describe('API E2E Tests', () => {
     it('should return service metrics', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/metrics'
+        url: '/metrics',
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body).toMatchObject({
-        service: 'cynosure-bridge'
+        service: 'cynosure-bridge',
       });
       expect(body).toHaveProperty('version');
       expect(body).toHaveProperty('uptime');
@@ -332,20 +330,20 @@ describe('API E2E Tests', () => {
   describe('Test Endpoint', () => {
     it('should return test response', async () => {
       const testPayload = { test: 'data' };
-      
+
       const response = await app.inject({
         method: 'POST',
         url: '/v1/test',
-        payload: testPayload
+        payload: testPayload,
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      
+
       expect(body).toMatchObject({
         status: 'ok',
         message: 'Test endpoint working',
-        body: testPayload
+        body: testPayload,
       });
       expect(body).toHaveProperty('timestamp');
     });
@@ -358,13 +356,13 @@ describe('API E2E Tests', () => {
         url: '/v1/completions',
         payload: {
           model: 'gpt-3.5-turbo',
-          prompt: 'test prompt'
-        }
+          prompt: 'test prompt',
+        },
       });
 
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
-      
+
       expect(body).toHaveProperty('error');
       expect(body.error.message).toContain('Legacy completions endpoint not supported');
       expect(body.error.type).toBe('deprecated_endpoint');
@@ -375,7 +373,7 @@ describe('API E2E Tests', () => {
     it('should return 404 for unknown endpoints', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/unknown/endpoint'
+        url: '/unknown/endpoint',
       });
 
       expect(response.statusCode).toBe(404);
@@ -387,8 +385,8 @@ describe('API E2E Tests', () => {
         url: '/v1/chat/completions',
         payload: '{invalid json}',
         headers: {
-          'content-type': 'application/json'
-        }
+          'content-type': 'application/json',
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -400,8 +398,8 @@ describe('API E2E Tests', () => {
         url: '/v1/chat/completions',
         payload: 'plain text',
         headers: {
-          'content-type': 'text/plain'
-        }
+          'content-type': 'text/plain',
+        },
       });
 
       expect(response.statusCode).toBe(400);
@@ -414,8 +412,8 @@ describe('API E2E Tests', () => {
         method: 'GET',
         url: '/health',
         headers: {
-          origin: 'http://localhost:3000'
-        }
+          origin: 'http://localhost:3000',
+        },
       });
 
       expect(response.headers).toHaveProperty('access-control-allow-origin');
@@ -426,10 +424,10 @@ describe('API E2E Tests', () => {
         method: 'OPTIONS',
         url: '/v1/chat/completions',
         headers: {
-          'origin': 'http://localhost:3000',
+          origin: 'http://localhost:3000',
           'access-control-request-method': 'POST',
-          'access-control-request-headers': 'content-type'
-        }
+          'access-control-request-headers': 'content-type',
+        },
       });
 
       expect([200, 204, 400]).toContain(response.statusCode);
